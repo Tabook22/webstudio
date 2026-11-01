@@ -244,6 +244,22 @@ const dict = {
   normal: ['Normal', 'عادية'],
   roomy: ['Roomy', 'واسعة'],
   columnAlign: ['Align column', 'محاذاة العمود'],
+  textType: ['Text type', 'نوع النص'],
+  hrLine: ['Horizontal line <hr>', 'خط أفقي <hr>'],
+  lineStyle: ['Line style', 'نمط الخط'],
+  line_solid: ['Solid', 'متصل'],
+  line_dashed: ['Dashed', 'متقطع'],
+  line_dotted: ['Dotted', 'منقط'],
+  line_double: ['Double', 'مزدوج'],
+  thickness: ['Thickness & colour', 'السماكة واللون'],
+  lineWidth: ['Width', 'العرض'],
+  full: ['Full', 'كامل'],
+  half: ['Half', 'نصف'],
+  short: ['Short', 'قصير'],
+  spaceAround: ['Space above & below', 'المسافة أعلى وأسفل'],
+  small: ['Small', 'صغيرة'],
+  medium: ['Medium', 'متوسطة'],
+  large: ['Large', 'كبيرة'],
 } as const;
 
 export type Key = keyof typeof dict;

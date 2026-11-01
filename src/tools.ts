@@ -14,7 +14,9 @@ const TAG_INFO: Record<string, Pair> = {
   h1: ['Main heading — use one per page for its title.', 'العنوان الرئيسي — استخدم واحدًا فقط لعنوان الصفحة.'],
   h2: ['Section heading — starts a new part of the page.', 'عنوان قسم — يبدأ جزءًا جديدًا من الصفحة.'],
   h3: ['Smaller heading inside a section.', 'عنوان أصغر داخل القسم.'],
-  h4: ['Small heading.', 'عنوان صغير.'],
+  h4: ['Heading level 4 — a sub-part of an <h3> section.', 'عنوان من المستوى 4 — جزء فرعي داخل قسم <h3>.'],
+  h5: ['Heading level 5 — a small heading inside an <h4> part.', 'عنوان من المستوى 5 — عنوان صغير داخل جزء <h4>.'],
+  h6: ['Heading level 6 — the smallest heading. Headings go h1 → h6 in order.', 'عنوان من المستوى 6 — أصغر عنوان. تتدرج العناوين من h1 إلى h6 بالترتيب.'],
   p: ['Paragraph — a block of normal text.', 'فقرة — كتلة من النص العادي.'],
   a: ['Link — takes the visitor to another page or website (href).', 'رابط — ينقل الزائر إلى صفحة أو موقع آخر (href).'],
   img: ['Image — shows a picture from a file (src). Always add alt text.', 'صورة — تعرض صورة من ملف (src). أضف دائمًا نصًا بديلًا (alt).'],
@@ -45,12 +47,13 @@ const TAG_INFO: Record<string, Pair> = {
   select: ['Dropdown — choose one option.', 'قائمة منسدلة — اختر خيارًا واحدًا.'],
   button: ['Button — something to click.', 'زر — شيء يُنقر عليه.'],
   label: ['Label — the name of a form field.', 'تسمية — اسم حقل النموذج.'],
-  hr: ['Horizontal line — separates parts.', 'خط أفقي — يفصل بين الأجزاء.'],
+  hr: ['Horizontal line — separates parts of the page. It has no closing tag.', 'خط أفقي — يفصل بين أجزاء الصفحة. ليس له وسم إغلاق.'],
   iframe: ['Frame — shows another page inside this one (map, video).', 'إطار — يعرض صفحة أخرى داخل هذه الصفحة (خريطة، فيديو).'],
   video: ['Video player.', 'مشغل فيديو.'],
   body: ['Body — everything visible on the page.', 'الجسم — كل ما يظهر في الصفحة.'],
 };
 
+const TEXT_TYPES = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
 const tagOf = (c: Component) => String(c.get('tagName') || '').toLowerCase();
 
 function closest(c: Component | undefined, tags: string[]): Component | undefined {
@@ -141,6 +144,23 @@ export function setupTools(editor: Editor) {
     updateState();
   });
 
+  /* Paragraph ↔ Heading 1–6, keeping the text, classes and styles. */
+  const textTypeSelect = h('select', { class: 'size-select text-type', title: t('textType'), 'aria-label': t('textType') },
+    h('option', { value: '' }, t('textType')),
+    h('option', { value: 'p' }, tx(['Paragraph', 'فقرة'])),
+    ...[1, 2, 3, 4, 5, 6].map((n) => h('option', { value: `h${n}` }, `${tx(['Heading', 'عنوان'])} ${n}`)),
+  );
+  textTypeSelect.addEventListener('change', () => {
+    const c = sel();
+    const to = textTypeSelect.value;
+    if (!c || !to || !TEXT_TYPES.includes(tagOf(c)) || tagOf(c) === to) return;
+    const attributes: Record<string, string> = { ...((c.get('attributes') as Record<string, string>) ?? {}) };
+    // Keep the element's own CSS (#id rules) by keeping its id.
+    if (editor.Css.getRules(`#${c.getId()}`).some((r) => Object.keys(r.getStyle()).length)) attributes.id = c.getId();
+    const [added] = c.replaceWith({ type: 'text', tagName: to, attributes, classes: c.getClasses(), components: c.getInnerHTML() });
+    if (added) editor.select(added);
+  });
+
   const insertLink = async () => {
     const d = doc();
     const s = d.getSelection();
@@ -180,7 +200,7 @@ export function setupTools(editor: Editor) {
       sizeSelect,
       btn('link', I.Link, insertLink),
     ),
-    h('div', { class: 'tool-row' }, fontSelect),
+    h('div', { class: 'tool-row' }, textTypeSelect, fontSelect),
   );
 
   function updateState() {
@@ -195,6 +215,9 @@ export function setupTools(editor: Editor) {
     set(formatButtons.center, st['text-align'] === 'center');
     set(formatButtons.right, st['text-align'] === 'right');
     set(formatButtons.justify, st['text-align'] === 'justify');
+    const tagNow = c ? tagOf(c) : '';
+    textTypeSelect.disabled = !TEXT_TYPES.includes(tagNow);
+    textTypeSelect.value = TEXT_TYPES.includes(tagNow) ? tagNow : '';
     fontSelect.value = FONT_OPTIONS.some(([, v]) => v === st['font-family']) ? st['font-family'] : '';
     sizeSelect.value = st['font-size'] && [...sizeSelect.options].some((o) => o.value === st['font-size']) ? st['font-size'] : '';
   }
@@ -252,6 +275,63 @@ export function setupTools(editor: Editor) {
       textBtn('delete', I.Trash2, () => c.remove()),
     ]);
 
+  /* ---- horizontal line <hr> ---- */
+  const lineTools = (hr: Component) => {
+    const st = hr.getStyle() as Record<string, string>;
+    const m = /(\d+)px\s+(solid|dashed|dotted|double)\s+(.+)/.exec(st['border-top'] || '') ?? [];
+    const cur = { width: m[1] ?? '2', style: m[2] ?? 'solid', color: (m[3] ?? '#cbd5e1').trim() };
+    const line = (changes: Partial<typeof cur>) => {
+      const next = { ...cur, ...changes };
+      // A double line needs at least 3px to show two lines.
+      if (next.style === 'double' && Number(next.width) < 3) next.width = '4';
+      hr.addStyle({ border: 'none', 'border-top': `${next.width}px ${next.style} ${next.color}` });
+      requestAnimationFrame(render);
+    };
+    const chip = (label: string, on: boolean, onClick: () => void, preview?: string) =>
+      h('button', { type: 'button', class: `chip${on ? ' on' : ''}`, onclick: onClick },
+        preview ? h('span', { class: 'line-preview', style: preview }) : '', label);
+    const width = st.width ?? '';
+    const space = /^(\d+)px/.exec(st.margin ?? '')?.[1] ?? '32';
+    // Width and spacing share one readable rule: "width: 50%; margin: 32px auto;".
+    const layout = (w: string, px: string) => {
+      const style: Record<string, string> = { ...(hr.getStyle() as Record<string, string>) };
+      for (const k of ['margin-top', 'margin-bottom', 'margin-left', 'margin-right']) delete style[k];
+      style.width = w;
+      style.margin = `${px}px ${w === '100%' ? '0' : 'auto'}`;
+      hr.setStyle(style);
+      requestAnimationFrame(render);
+    };
+    const COLORS = ['#cbd5e1', '#94a3b8', '#1e293b', '#4f46e5', '#0891b2', '#059669', '#d97706', '#dc2626'];
+    return h('div', { class: 'ctx line-tools' },
+      h('div', { class: 'ctx-title' }, t('hrLine')),
+      h('div', { class: 'mini-title' }, t('lineStyle')),
+      h('div', { class: 'chips' },
+        ...(['solid', 'dashed', 'dotted', 'double'] as const).map((s) =>
+          chip(t(`line_${s}` as Key), cur.style === s, () => line({ style: s }), `border-top:${s === 'double' ? 4 : 2}px ${s} currentColor`),
+        ),
+      ),
+      h('div', { class: 'mini-title' }, t('thickness')),
+      h('div', { class: 'chips' }, ...['1', '2', '4', '6'].map((w) => chip(`${w}px`, cur.width === w, () => line({ width: w })))),
+      h('div', { class: 'mini-swatches' },
+        ...COLORS.map((c) =>
+          h('button', { type: 'button', class: `swatch${c === cur.color ? ' on' : ''}`, style: `background:${c}`, title: c, onclick: () => line({ color: c }) }),
+        ),
+      ),
+      h('div', { class: 'mini-title' }, t('lineWidth')),
+      h('div', { class: 'chips' },
+        chip(t('full'), !width || width === '100%', () => layout('100%', space)),
+        chip(t('half'), width === '50%', () => layout('50%', space)),
+        chip(t('short'), width === '120px', () => layout('120px', space)),
+      ),
+      h('div', { class: 'mini-title' }, t('spaceAround')),
+      h('div', { class: 'chips' },
+        ...([['small', '16'], ['medium', '32'], ['large', '56']] as const).map(([k, px]) =>
+          chip(t(k), space === px, () => layout(width || '100%', px)),
+        ),
+      ),
+    );
+  };
+
   function section(key: Key, buttons: (HTMLElement | null)[]) {
     return h('div', { class: 'ctx' }, h('div', { class: 'ctx-title' }, t(key)), h('div', { class: 'ctx-buttons' }, ...buttons));
   }
@@ -278,6 +358,7 @@ export function setupTools(editor: Editor) {
     if (cell) contextBox.append(...tableCards(editor, cell, render));
     if (li) contextBox.append(listTools(li));
     if (img) contextBox.append(imageTools(img));
+    if (tagOf(c) === 'hr') contextBox.append(lineTools(c));
     contextBox.append(elementTools(c));
     updateState();
   }

@@ -8,7 +8,7 @@ A teaching tool for designing websites by **drag and drop** while seeing the
 
 | Area | Features |
 | --- | --- |
-| **Toolbox** | Headings, paragraph, quote, link, button · bulleted, numbered and nested lists · table · image, video, YouTube, map, gallery · section, 2/3/4 columns, card, divider, spacer · contact form, inputs, dropdown, checkbox · nav bar, hero, features, footer |
+| **Toolbox** | Headings H1–H6, paragraph, quote, horizontal line `<hr>`, link, button · bulleted, numbered and nested lists · table · image, video, YouTube, map, gallery · section, 2/3/4 columns, card, divider, spacer · contact form, inputs, dropdown, checkbox · nav bar, hero, features, footer |
 | **Format** | Bold, italic, underline, strikethrough, align left/center/right/justify, text and background colour, size, link. Works on selected text while typing, or on the whole element |
 | **Table editor** | Dropping a Table asks for its size on a grid (columns × rows, header row on/off). Click a cell for: rows and columns (above/below/before/after/delete — merged cells stay correct), **Merge cells** (Shift + click a rectangle of cells → `colspan`/`rowspan`) and **Split cell**. **Table style**: borders All / Outside / Rows / None with colour and 1–3 px, header row on/off and header colour, striped rows, highlight on hover, full width, space inside cells, align a column. Every option is a real CSS rule on the table's `#id` (e.g. `#t tbody tr:nth-child(even) td`). The floating toolbar adds row below, column after and merge. Check page warns when rows have different numbers of cells |
 | **Context tools** | Tables: see Table editor · Lists: add/remove items, switch bullets ↔ numbers · Images: replace · Any element: select parent, duplicate, delete |

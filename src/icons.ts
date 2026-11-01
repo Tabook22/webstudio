@@ -1,5 +1,5 @@
 export {
-  Heading1, Heading2, Heading3, Pilcrow, Quote, Link, RectangleHorizontal, List, ListOrdered,
+  Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, SeparatorHorizontal, Pilcrow, Quote, Link, RectangleHorizontal, List, ListOrdered,
   ListTree, Table, Image, Video, SquarePlay, Square, Columns2, Columns3, IdCard, Minus, Menu,
   PanelTop, PanelBottom, Mail, Images, TextCursorInput, Text, ChevronDown, SquareCheck,
   MousePointerClick, Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight,

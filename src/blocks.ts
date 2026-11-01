@@ -52,8 +52,12 @@ const BLOCKS: BlockDef[] = [
   { id: 'h1', cat: 'text', label: ['Heading 1', 'عنوان 1'], icon: I.Heading1, content: '<h1>Main heading</h1>' },
   { id: 'h2', cat: 'text', label: ['Heading 2', 'عنوان 2'], icon: I.Heading2, content: '<h2>Section heading</h2>' },
   { id: 'h3', cat: 'text', label: ['Heading 3', 'عنوان 3'], icon: I.Heading3, content: '<h3>Small heading</h3>' },
+  { id: 'h4', cat: 'text', label: ['Heading 4', 'عنوان 4'], icon: I.Heading4, content: '<h4>Smaller heading</h4>' },
+  { id: 'h5', cat: 'text', label: ['Heading 5', 'عنوان 5'], icon: I.Heading5, content: '<h5>Minor heading</h5>' },
+  { id: 'h6', cat: 'text', label: ['Heading 6', 'عنوان 6'], icon: I.Heading6, content: '<h6>Smallest heading</h6>' },
   { id: 'p', cat: 'text', label: ['Paragraph', 'فقرة'], icon: I.Pilcrow, content: '<p>Write your text here. Double-click to edit it.</p>' },
   { id: 'quote', cat: 'text', label: ['Quote', 'اقتباس'], icon: I.Quote, content: '<blockquote style="border-inline-start:4px solid #4f46e5;margin:16px 0;padding:8px 16px;color:#475569;font-style:italic;">A good quote goes here.</blockquote>' },
+  { id: 'hr', cat: 'text', label: ['Horizontal line', 'خط أفقي'], icon: I.SeparatorHorizontal, content: '<hr style="border:none;border-top:2px solid #cbd5e1;margin:32px 0;">' },
   { id: 'link', cat: 'text', label: ['Link', 'رابط'], icon: I.Link, content: '<a href="https://example.com">Click this link</a>' },
   { id: 'button', cat: 'text', label: ['Button', 'زر'], icon: I.RectangleHorizontal, content: `<a class="btn" href="#">Get started</a>${S.btn}` },
 
@@ -74,7 +78,6 @@ const BLOCKS: BlockDef[] = [
   { id: 'cols3', cat: 'layout', label: ['3 columns', '3 أعمدة'], icon: I.Columns3, content: `<div class="row"><div class="col"></div><div class="col"></div><div class="col"></div></div>${S.cols}` },
   { id: 'cols4', cat: 'layout', label: ['4 columns', '4 أعمدة'], icon: I.Columns4, content: `<div class="row"><div class="col"></div><div class="col"></div><div class="col"></div><div class="col"></div></div>${S.cols}` },
   { id: 'card', cat: 'layout', label: ['Card', 'بطاقة'], icon: I.IdCard, content: `<div class="card"><h3>Card title</h3><p>A short description of this card.</p><a class="btn" href="#">Read more</a></div>${S.card}${S.btn}` },
-  { id: 'hr', cat: 'layout', label: ['Divider', 'فاصل'], icon: I.Minus, content: '<hr style="border:none;border-top:1px solid #e2e8f0;margin:32px 0;">' },
   { id: 'spacer', cat: 'layout', label: ['Spacer', 'مسافة'], icon: I.MoveVertical, content: '<div style="height:48px;"></div>' },
 
   { id: 'form', cat: 'forms', label: ['Contact form', 'نموذج تواصل'], icon: I.Mail, content: `<form class="form"><label for="name">Name</label><input id="name" type="text" placeholder="Your name"><label for="email">Email</label><input id="email" type="email" placeholder="you@example.com"><label for="msg">Message</label><textarea id="msg" rows="4" placeholder="Write a message"></textarea><button class="btn" type="submit">Send</button></form>${S.form}${S.btn}` },
