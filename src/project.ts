@@ -2,8 +2,8 @@ import { get, set, del } from 'idb-keyval';
 import JSZip from 'jszip';
 import type { Asset } from './assets';
 import { dataUrlToBlob, fileToDataUrl, isImageFile } from './assets';
-import { parseDocument, formatCss } from './serialize';
-import { STARTER_CSS, placeholderImage } from './blocks';
+import { parseDocument } from './serialize';
+import { RTL_TEMPLATES, TEMPLATES, templateCss } from './templates';
 
 export interface Project {
   id: string;
@@ -82,42 +82,20 @@ function setCurrentId(id: string) {
 
 /* ---------- starter templates ---------- */
 
-export type TemplateId = 'blank' | 'personal' | 'landing';
+export type TemplateId = string;
 
-const cssOf = (...parts: string[]) =>
-  formatCss(parts.map((p) => p.replace(/<\/?style>/g, '')).join(''));
-
-export function createProject(name: string, template: TemplateId, siteLang: 'en' | 'ar'): Project {
-  const p: Project = {
-    id: newId(), name, title: name, siteLang, html: '', css: BASE_CSS, assets: [], updatedAt: Date.now(),
+export function createProject(name: string, templateId: TemplateId, siteLang: 'en' | 'ar'): Project {
+  const tpl = TEMPLATES.find((t) => t.id === templateId) ?? TEMPLATES[0];
+  return {
+    id: newId(),
+    name,
+    title: name,
+    siteLang: RTL_TEMPLATES.has(tpl.id) ? 'ar' : siteLang,
+    html: tpl.html,
+    css: tpl.id === 'blank' ? BASE_CSS : templateCss(tpl),
+    assets: tpl.images.map((i) => ({ ...i })),
+    updatedAt: Date.now(),
   };
-  if (template === 'personal') {
-    p.assets = [{ path: 'images/me.svg', dataUrl: placeholderImage('Me') }];
-    p.html = `<section class="section">
-  <img src="images/me.svg" alt="A photo of me" style="width:180px;height:180px;object-fit:cover;border-radius:50%;">
-  <h1>Hello, I'm Sara</h1>
-  <p>I am a student learning how to design websites. This is my first page.</p>
-  <h2>My hobbies</h2>
-  <ul>
-    <li>Reading</li>
-    <li>Photography</li>
-    <li>Football</li>
-  </ul>
-  <h2>My timetable</h2>
-  <table class="table">
-    <thead><tr><th>Day</th><th>Subject</th></tr></thead>
-    <tbody><tr><td>Sunday</td><td>Web Design</td></tr><tr><td>Monday</td><td>Databases</td></tr></tbody>
-  </table>
-</section>`;
-    p.css = BASE_CSS + '\n' + cssOf(STARTER_CSS.section, STARTER_CSS.table);
-  } else if (template === 'landing') {
-    p.html = `<nav class="navbar"><a class="brand" href="#">My Brand</a><ul><li><a href="#">Home</a></li><li><a href="#">Features</a></li><li><a href="#">Contact</a></li></ul></nav>
-<header class="hero"><h1>Build something great</h1><p>One clear sentence that explains your idea.</p><a class="btn" href="#" style="background:#ffffff;color:#4f46e5;">Get started</a></header>
-<section class="section"><div class="row"><div class="card"><h3>Fast</h3><p>Explain the first idea.</p></div><div class="card"><h3>Simple</h3><p>Explain the second idea.</p></div><div class="card"><h3>Friendly</h3><p>Explain the third idea.</p></div></div></section>
-<footer class="footer"><p>© 2026 My Brand</p></footer>`;
-    p.css = BASE_CSS + '\n' + cssOf(STARTER_CSS.nav, STARTER_CSS.hero, STARTER_CSS.btn, STARTER_CSS.section, STARTER_CSS.cols, STARTER_CSS.card, STARTER_CSS.footer);
-  }
-  return p;
 }
 
 /* ---------- export ---------- */

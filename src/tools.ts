@@ -336,4 +336,22 @@ export function setupTools(editor: Editor) {
   editor.on('component:remove', () => setTimeout(render));
   editor.on('component:styleUpdate', updateState);
   render();
+
+  // Shared with the floating toolbar on the canvas.
+  const after = (fn: () => void) => () => {
+    fn();
+    updateState();
+  };
+  return {
+    bold: after(fmt('bold', 'font-weight', 'bold')),
+    italic: after(fmt('italic', 'font-style', 'italic')),
+    align: (value: 'left' | 'center' | 'right') =>
+      after(align(value, { left: 'justifyLeft', center: 'justifyCenter', right: 'justifyRight' }[value]))(),
+    textColor: (v: string) => (editing() ? doc().execCommand('foreColor', false, v) : sel()?.addStyle({ color: v })),
+    bgColor: (v: string) => sel()?.addStyle({ 'background-color': v }),
+    link: insertLink,
+    replaceImage: (img: Component) => editor.runCommand('core:open-assets', { target: img, types: ['image'], accept: 'image/*' }),
+  };
 }
+
+export type ToolActions = ReturnType<typeof setupTools>;

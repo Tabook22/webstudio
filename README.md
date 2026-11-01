@@ -15,6 +15,12 @@ A teaching tool for designing websites by **drag and drop** while seeing the
 | **Modes** | **Visual**, **Split** (page above, code below, drag the bar to resize) and **Code** |
 | **Linked code** | Click an element → its HTML lines *and* the CSS rules that style it light up. Click a line of code → that element is selected on the page. Typing in the code updates the page live |
 | **Teaching aids** | “What is this?” card explains the selected tag in plain language · breadcrumb (`body › section › h2`) · Structure tab shows the DOM tree · projector size button |
+| **Look & feel** | Floating “studio” panels, Inter / IBM Plex Sans Arabic fonts, light and dark editor themes (☾ button; follows the computer’s setting at first), a ⋯ menu for page settings, paste HTML, projector size and language |
+| **Floating toolbar** | Appears right under the selected element on the page: tag name, edit text, bold, italic, alignment, text and background colour, link / replace image, select parent, duplicate, delete |
+| **What just changed** | After every visual action a small card shows the exact HTML and CSS lines it added or removed (✨ button turns it off). Hidden in Split/Code mode, where the code is already visible |
+| **X-ray** | Labels every element with its tag (and class), outlines all boxes, and draws the box model of the hovered/selected element — margin orange, padding green, content blue — with its size and spacing |
+| **Design kits** | 8 kits (Indigo, Ocean, Sunset, Forest, Minimal, Night, Omani heritage, Playful) that restyle the whole site through CSS variables in `:root` |
+| **Template gallery** | New website shows live previews: Blank, About me, Landing page, Portfolio, CV / Résumé, Café menu, Event page, Student club (Arabic, right-to-left) |
 | **Images tab** | The project's image library. Drop pictures from the computer (or click to upload), then drag a thumbnail onto the page — or onto the Background box. Hover a thumbnail for Insert / Use as background / Delete. Images can also be dropped from the desktop straight onto the page |
 | **Backgrounds** | One card for the selected element — or the whole page (“Page” button): 16 colour swatches + custom colour, 6 gradients, an image drop box with Fill / Fit / Tile, “Darken image” and “Stay fixed when scrolling” |
 | **Quick effects** | Rounded, shadow, border, padding, center, and hover effects (grow, lift) written as real `:hover` CSS rules |

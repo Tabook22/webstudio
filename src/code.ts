@@ -43,6 +43,8 @@ interface CodePanelOptions {
   onJs: (js: string) => void;
   /** The stylesheet was regenerated (used to load Google fonts in the canvas). */
   onCss: (css: string) => void;
+  /** Code was regenerated after a visual change on the page. */
+  onCodeChange?: (file: string, before: string, after: string) => void;
 }
 
 /**
@@ -57,6 +59,9 @@ export class CodePanel {
   private htmlDirty = false;
   private cssDirty = false;
   private writing = false;
+  /** Changes before this time come from typing or loading, not from the canvas. */
+  private quietUntil = 0;
+  private hush = () => (this.quietUntil = Date.now() + 700);
   private selectingFromCode = false;
   visible = false;
 
@@ -126,6 +131,7 @@ export class CodePanel {
   private applyCss = debounce(() => this.applyCssNow(), 350);
 
   private applyHtmlNow() {
+    this.hush();
     const parsed = parseDocument(this.htmlView.state.doc.toString());
     const meta: Partial<PageMeta> = {};
     if (parsed.title !== undefined) meta.title = parsed.title;
@@ -140,6 +146,7 @@ export class CodePanel {
   }
 
   private applyCssNow() {
+    this.hush();
     this.o.editor.setStyle(fromCode(this.cssView.state.doc.toString()));
     this.settle('css');
   }
@@ -162,6 +169,7 @@ export class CodePanel {
     this.applyHtml.cancel();
     this.applyCss.cancel();
     this.htmlDirty = this.cssDirty = false;
+    this.hush();
     this.refresh();
   }
 
@@ -170,6 +178,7 @@ export class CodePanel {
     if (which === 'html' ? this.htmlView.hasFocus : this.cssView.hasFocus) return;
     if (which === 'html') this.htmlDirty = false;
     else this.cssDirty = false;
+    this.hush();
     this.refresh();
   }
 
@@ -188,10 +197,15 @@ export class CodePanel {
   }
 
   private write(view: EditorView, text: string) {
-    if (view.state.doc.toString() === text) return;
+    const before = view.state.doc.toString();
+    if (before === text) return;
     this.writing = true;
     view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text } });
     this.writing = false;
+    const typing = this.htmlDirty || this.cssDirty || this.htmlView.hasFocus || this.cssView.hasFocus;
+    if (view !== this.jsView && before && !typing && Date.now() > this.quietUntil) {
+      this.o.onCodeChange?.(view === this.htmlView ? 'index.html' : 'style.css', before, text);
+    }
   }
 
   /** Re-generate code from the canvas (skips a view the student is typing in). */

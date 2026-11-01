@@ -172,6 +172,25 @@ const dict = {
   show: ['Show', 'عرض'],
   problems: ['things to improve', 'نقاط للتحسين'],
   emmetHint: ['Tip: type ul>li*3 then press Tab', 'تلميح: اكتب ul>li*3 ثم اضغط Tab'],
+  darkMode: ['Dark mode', 'الوضع الداكن'],
+  lightMode: ['Light mode', 'الوضع الفاتح'],
+  xray: ['X-ray', 'أشعة سينية'],
+  xrayTitle: ['X-ray: show tags and the box model', 'الأشعة السينية: إظهار الوسوم ونموذج الصندوق'],
+  margin: ['margin', 'الهامش'],
+  padding: ['padding', 'الحشوة'],
+  content: ['content', 'المحتوى'],
+  showChanges: ['Show code changes', 'إظهار تغييرات الكود'],
+  whatChanged: ['What just changed in the code', 'ما الذي تغيّر في الكود'],
+  designKits: ['Design kits', 'أطقم التصميم'],
+  kitsNote: [
+    'A kit sets colours, fonts and rounded corners for the whole site using CSS variables in',
+    'يضبط الطقم الألوان والخطوط واستدارة الزوايا للموقع كله باستخدام متغيرات CSS في',
+  ],
+  kitApplied: ['Design kit applied', 'تم تطبيق طقم التصميم'],
+  templates: ['Templates', 'القوالب'],
+  textColorShort: ['Text color', 'لون النص'],
+  moreTools: ['More', 'المزيد'],
+  edit: ['Edit text', 'تحرير النص'],
 } as const;
 
 export type Key = keyof typeof dict;

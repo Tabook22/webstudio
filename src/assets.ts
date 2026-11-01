@@ -73,6 +73,8 @@ function uniquePath(name: string) {
 
 /** Register an image; returns its project path. Reuses the path if already known. */
 export function addAsset(dataUrl: string, name?: string, exactPath?: string): string {
+  // Brackets and quotes would end a CSS url(...) early; keep data URLs safe.
+  dataUrl = dataUrl.replace(/[()']/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase());
   const known = byData.get(dataUrl);
   if (known) return known;
   let path: string;

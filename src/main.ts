@@ -1,6 +1,7 @@
 import 'grapesjs/dist/css/grapes.min.css';
 import './styles.css';
 import './panels.css';
+import './theme.css';
 import type { Component } from 'grapesjs';
 import { applyI18n, lang, setLang, t } from './i18n';
 import * as Icons from './icons';
@@ -12,13 +13,18 @@ import { setupMedia } from './media';
 import { showCheck } from './checker';
 import { syncCanvasFonts } from './fonts';
 import { openPreview, setupScripting } from './scripting';
+import { setupFloatBar } from './floatbar';
+import { setupXray } from './xray';
+import { setupFlash } from './flash';
+import { KITS, applyKit, currentKitId, kitLabel, kitMood } from './kits';
+import { RTL_TEMPLATES, TEMPLATES, templatePreviewHtml } from './templates';
 import { $, debounce, h, modal, toast } from './ui';
 import { addAsset, clearAssets, fileToDataUrl, fromCode, listAssets } from './assets';
 import { serializeBody, type PageMeta } from './serialize';
 import {
   BASE_CSS, canUseFolders, createProject, deleteProject, downloadZip, getCurrentId, importFolderHandle,
   importLooseFiles, importZip, listProjects, loadProject, newId, saveProject, saveToFolder,
-  type ImportedSite, type Project, type TemplateId,
+  type ImportedSite, type Project,
 } from './project';
 
 /* ---------- chrome ---------- */
@@ -49,6 +55,7 @@ const code = new CodePanel({
     markDirty();
   },
   onCss: (css) => syncCanvasFonts(editor.Canvas.getDocument(), css),
+  onCodeChange: (file, before, after) => flash?.onCodeChange(file, before, after),
   setMeta: (m) => {
     Object.assign(project, m);
     applySiteDir();
@@ -56,7 +63,9 @@ const code = new CodePanel({
   },
 });
 
-setupTools(editor);
+const tools = setupTools(editor);
+setupFloatBar(editor, tools);
+setupXray(editor);
 setupMedia(editor, {
   insert: (content) => insertAndSelect(content),
   isUsed: (path) => {
@@ -250,35 +259,90 @@ async function newProjectDialog() {
   const name = h('input', { type: 'text', value: t('newProject'), dir: 'auto', required: true });
   const siteLang = h('select', {}, h('option', { value: 'en' }, 'English'), h('option', { value: 'ar' }, 'العربية'));
   siteLang.value = lang;
-  const tpls: [TemplateId, Parameters<typeof t>[0], string][] = [
-    ['blank', 'tplBlank', Icons.Square],
-    ['personal', 'tplPersonal', Icons.IdCard],
-    ['landing', 'tplLanding', Icons.LayoutTemplate],
-  ];
-  const grid = h('div', { class: 'tpl-grid' },
-    ...tpls.map(([id, key, svg], i) =>
-      h('label', { class: 'tpl' },
-        h('input', { type: 'radio', name: 'tpl', value: id, checked: i === 0 }),
-        h('span', { class: 'tpl-icon', html: icon(svg, 28) }),
-        h('span', {}, t(key)),
+  const tx = (p: [string, string]) => p[lang === 'ar' ? 1 : 0];
+  const gallery = h('div', { class: 'tpl-gallery' },
+    ...TEMPLATES.map((tpl, i) =>
+      h('label', { class: 'tpl-card' },
+        h('input', { type: 'radio', name: 'tpl', value: tpl.id, checked: i === 0 }),
+        h('div', { class: 'tpl-thumb' },
+          tpl.html
+            ? h('iframe', { srcdoc: templatePreviewHtml(tpl), loading: 'lazy', tabindex: '-1', 'aria-hidden': 'true', sandbox: '' })
+            : h('div', { class: 'tpl-blank', html: icon(Icons.FilePlus, 36) }),
+        ),
+        h('div', { class: 'tpl-meta' }, h('strong', {}, tx(tpl.name)), h('small', {}, tx(tpl.desc))),
       ),
     ),
   );
+  gallery.addEventListener('change', () => {
+    const id = (gallery.querySelector('input:checked') as HTMLInputElement).value;
+    if (RTL_TEMPLATES.has(id)) siteLang.value = 'ar';
+  });
   const ok = await modal({
     title: t('newProject'),
     okLabel: t('create'),
+    className: 'gallery',
     body: h('div', { class: 'stack' },
-      h('label', { class: 'field' }, h('span', {}, t('projectName')), name),
-      h('div', { class: 'field' }, h('span', {}, t('chooseTemplate')), grid),
-      h('label', { class: 'field' }, h('span', {}, t('siteLang')), siteLang),
+      h('div', { class: 'new-row' },
+        h('label', { class: 'field' }, h('span', {}, t('projectName')), name),
+        h('label', { class: 'field' }, h('span', {}, t('siteLang')), siteLang),
+      ),
+      h('div', { class: 'field' }, h('span', {}, t('chooseTemplate')), gallery),
     ),
   });
   if (!ok) return;
   if (dirty) await save(true);
-  const tpl = (grid.querySelector('input:checked') as HTMLInputElement).value as TemplateId;
+  const tpl = (gallery.querySelector('input:checked') as HTMLInputElement).value;
   const p = createProject(name.value.trim() || t('newProject'), tpl, siteLang.value as 'en' | 'ar');
   load(p);
   await save(true);
+}
+
+async function kitsDialog() {
+  const current = currentKitId(editor);
+  let close: () => void = () => {};
+  const grid = h('div', { class: 'kit-grid' },
+    ...KITS.map((k) => {
+      const v = k.vars;
+      return h('button', {
+        type: 'button', class: `kit${k.id === current ? ' on' : ''}`,
+        onclick: () => {
+          applyKit(editor, k);
+          toast(`${t('kitApplied')}: ${kitLabel(k)}`);
+          close();
+        },
+      },
+        h('div', {
+          class: 'kit-preview',
+          style: `background:${v['--color-bg']};color:${v['--color-text']};border:1px solid rgba(0,0,0,.08);font-family:${v['--font-body']};border-radius:${v['--radius']}`,
+        },
+          h('b', { style: `font-family:${v['--font-heading']};color:${v['--color-heading']}` }, kitLabel(k)),
+          h('span', {}, kitMood(k)),
+          h('i', { style: `background:${v['--color-primary']};color:${v['--color-on-primary']};border-radius:${v['--radius']}` }, 'Button'),
+        ),
+        h('div', { class: 'kit-name' },
+          h('div', { class: 'kit-dots' },
+            ...['--color-primary', '--color-secondary', '--color-surface', '--color-dark'].map((key) => h('span', { style: `background:${v[key]}` })),
+          ),
+          k.id === current ? h('span', { html: icon(Icons.Check, 16), style: 'color:var(--accent)' }) : '',
+        ),
+      );
+    }),
+  );
+  const fontsLink = h('link', {
+    rel: 'stylesheet',
+    href: 'https://fonts.googleapis.com/css2?family=Poppins:wght@700&family=Montserrat:wght@700&family=Merriweather:wght@700&family=Amiri:wght@700&family=Changa:wght@700&family=Open+Sans&family=Lato&family=Tajawal&display=swap',
+  });
+  const p = modal({
+    title: t('designKits'),
+    wide: true,
+    body: h('div', {},
+      fontsLink,
+      h('p', { class: 'kit-note', html: `${t('kitsNote')} <code dir="ltr">:root { --color-primary: … }</code>` }),
+      grid,
+    ),
+  });
+  close = () => (document.querySelector('dialog.modal header .icon-btn') as HTMLButtonElement | null)?.click();
+  await p;
 }
 
 async function projectsDialog() {
@@ -455,6 +519,50 @@ $('#btn-zip').addEventListener('click', async () => {
 $('#btn-preview').addEventListener('click', preview);
 $('#btn-paste').addEventListener('click', pasteHtmlDialog);
 $('#btn-check').addEventListener('click', () => showCheck(editor, project.title));
+$('#btn-kits').addEventListener('click', kitsDialog);
+
+/* the ⋯ menu */
+const moreBtn = $('#btn-more');
+const moreMenu = $('#more-menu');
+function closeMore() {
+  moreMenu.hidden = true;
+  moreBtn.setAttribute('aria-expanded', 'false');
+}
+moreBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (!moreMenu.hidden) return closeMore();
+  const r = moreBtn.getBoundingClientRect();
+  moreMenu.hidden = false;
+  moreMenu.style.top = `${r.bottom + 6}px`;
+  const w = moreMenu.offsetWidth;
+  moreMenu.style.left = `${Math.min(Math.max(8, lang === 'ar' ? r.left : r.right - w), innerWidth - w - 8)}px`;
+  moreBtn.setAttribute('aria-expanded', 'true');
+});
+moreMenu.addEventListener('click', closeMore);
+document.addEventListener('click', (e) => {
+  if (!moreMenu.hidden && !moreMenu.contains(e.target as Node)) closeMore();
+});
+window.addEventListener('keydown', (e) => e.key === 'Escape' && closeMore());
+
+const flash = setupFlash({
+  onOpenCode: () => setMode('split'),
+  isCodeVisible: () => workspace.dataset.mode !== 'visual',
+});
+
+/* light / dark editor theme */
+const themeBtn = $('#btn-theme');
+function setTheme(theme: 'light' | 'dark') {
+  document.documentElement.dataset.theme = theme;
+  try {
+    localStorage.setItem('webdesigner:theme', theme);
+  } catch {}
+  const dark = theme === 'dark';
+  themeBtn.innerHTML = icon(dark ? Icons.Sun : Icons.Moon, 18);
+  themeBtn.title = t(dark ? 'lightMode' : 'darkMode');
+  themeBtn.setAttribute('aria-label', themeBtn.title);
+}
+setTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
+themeBtn.addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
 $('#btn-page').addEventListener('click', pageDialog);
 $('#btn-lang').addEventListener('click', async () => {
   if (dirty) await save(true);

@@ -37,12 +37,13 @@ export interface ModalOptions {
   okLabel?: string;
   onOk?: () => boolean | void | Promise<boolean | void>;
   wide?: boolean;
+  className?: string;
 }
 
 /** Simple accessible dialog. Resolves true when confirmed. */
 export function modal(opts: ModalOptions): Promise<boolean> {
   return new Promise((resolve) => {
-    const dlg = h('dialog', { class: `modal${opts.wide ? ' wide' : ''}` });
+    const dlg = h('dialog', { class: `modal${opts.wide ? ' wide' : ''} ${opts.className ?? ''}` });
     const close = (ok: boolean) => {
       dlg.close();
       dlg.remove();

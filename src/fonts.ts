@@ -1,6 +1,6 @@
 /** Fonts students can pick. Google fonts are linked automatically when used. */
 export const GOOGLE_FONTS = [
-  'Roboto', 'Open Sans', 'Poppins', 'Montserrat', 'Lato', 'Playfair Display', 'Merriweather',
+  'Inter', 'Roboto', 'Open Sans', 'Poppins', 'Montserrat', 'Lato', 'Playfair Display', 'Merriweather',
   'Pacifico', 'Cairo', 'Tajawal', 'Amiri', 'Noto Kufi Arabic', 'Changa',
 ];
 

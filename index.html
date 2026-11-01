@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Web Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" />
+    <script>
+      // Apply the saved (or system) theme before first paint to avoid a flash.
+      try {
+        var th = localStorage.getItem('webdesigner:theme');
+        if (!th) th = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = th;
+      } catch (e) {}
+    </script>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234f46e5'/%3E%3Cpath d='M9 11l-4 5 4 5M23 11l4 5-4 5M18 8l-4 16' stroke='white' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
   </head>
   <body>
@@ -43,14 +54,24 @@
         <button class="tb icon" id="btn-redo" data-i18n-title="redo"><i data-icon="Redo2"></i></button>
       </div>
 
+      <div class="group teach-group">
+        <button class="tb toggle" id="btn-xray" data-i18n-title="xrayTitle" aria-pressed="false"><i data-icon="ScanEye"></i><span data-i18n="xray"></span></button>
+        <button class="tb toggle icon" id="btn-flash" data-i18n-title="showChanges" aria-pressed="true"><i data-icon="Sparkles"></i></button>
+        <button class="tb" id="btn-kits" data-i18n-title="designKits"><i data-icon="SwatchBook"></i><span data-i18n="designKits"></span></button>
+      </div>
+
       <div class="spacer"></div>
 
       <div class="group">
+        <button class="tb icon" id="btn-theme" data-i18n-title="darkMode"><i data-icon="Moon"></i></button>
         <button class="tb icon" id="btn-check" data-i18n-title="check"><i data-icon="SquareCheck"></i></button>
-        <button class="tb icon" id="btn-paste" data-i18n-title="pasteHtml"><i data-icon="ClipboardPaste"></i></button>
-        <button class="tb icon" id="btn-page" data-i18n-title="pageSettings"><i data-icon="Settings"></i></button>
-        <button class="tb icon" id="btn-big" data-i18n-title="bigUi"><i data-icon="ZoomIn"></i></button>
-        <button class="tb" id="btn-lang"><i data-icon="Languages"></i><span data-i18n="langSwitch"></span></button>
+        <button class="tb icon" id="btn-more" data-i18n-title="moreTools" aria-haspopup="menu" aria-expanded="false"><i data-icon="Ellipsis"></i></button>
+        <div class="more-menu" id="more-menu" role="menu" hidden>
+          <button role="menuitem" id="btn-page"><i data-icon="Settings"></i><span data-i18n="pageSettings"></span></button>
+          <button role="menuitem" id="btn-paste"><i data-icon="ClipboardPaste"></i><span data-i18n="pasteHtml"></span></button>
+          <button role="menuitem" id="btn-big"><i data-icon="ZoomIn"></i><span data-i18n="bigUi"></span></button>
+          <button role="menuitem" id="btn-lang"><i data-icon="Languages"></i><span data-i18n="langSwitch"></span></button>
+        </div>
         <button class="tb primary" id="btn-preview" data-i18n-title="preview"><i data-icon="Eye"></i><span data-i18n="preview"></span></button>
       </div>
     </header>
