@@ -4,6 +4,7 @@ import * as I from './icons';
 import { icon } from './icons';
 import { askText, h } from './ui';
 import { FONT_OPTIONS } from './fonts';
+import { tableCards } from './table';
 
 type Pair = [string, string];
 const tx = (p: Pair) => p[lang === 'ar' ? 1 : 0];
@@ -198,57 +199,6 @@ export function setupTools(editor: Editor) {
     sizeSelect.value = st['font-size'] && [...sizeSelect.options].some((o) => o.value === st['font-size']) ? st['font-size'] : '';
   }
 
-  /* ---- table helpers ---- */
-  const emptyCell = (c: Component) => {
-    const copy = c.clone();
-    copy.components('');
-    return copy;
-  };
-  const rowsOf = (table: Component) => table.find('tr');
-
-  const tableTools = (cell: Component) => {
-    const row = cell.parent()!;
-    const group = row.parent()!;
-    const table = closest(row, ['table'])!;
-    const colIndex = () => row.components().indexOf(cell);
-    const addRow = (after: boolean) => {
-      const copy = row.clone();
-      copy.components().forEach((c: Component) => {
-        c.components('');
-      });
-      group.components().add(copy, { at: group.components().indexOf(row) + (after ? 1 : 0) });
-      editor.select(copy.components().at(colIndex()));
-    };
-    const addCol = (after: boolean) => {
-      const i = colIndex();
-      for (const r of rowsOf(table)) {
-        const cells = r.components();
-        const ref = cells.at(Math.min(i, cells.length - 1));
-        if (ref) cells.add(emptyCell(ref), { at: Math.min(i, cells.length - 1) + (after ? 1 : 0) });
-      }
-    };
-    const delRow = () => {
-      if (rowsOf(table).length <= 1) return;
-      const next = group.components().at(group.components().indexOf(row) + 1) || group.components().at(group.components().indexOf(row) - 1);
-      row.remove();
-      if (next) editor.select(next.components().at(0));
-    };
-    const delCol = () => {
-      const i = colIndex();
-      if (row.components().length <= 1) return;
-      for (const r of rowsOf(table)) r.components().at(i)?.remove();
-      editor.select(row.components().at(Math.max(0, i - 1)));
-    };
-    return section('table', [
-      textBtn('rowAbove', I.ArrowUp, () => addRow(false)),
-      textBtn('rowBelow', I.ArrowDown, () => addRow(true)),
-      textBtn('colBefore', lang === 'ar' ? I.ArrowRight : I.ArrowLeft, () => addCol(false)),
-      textBtn('colAfter', lang === 'ar' ? I.ArrowLeft : I.ArrowRight, () => addCol(true)),
-      textBtn('delRow', I.Trash2, delRow),
-      textBtn('delCol', I.Trash2, delCol),
-    ]);
-  };
-
   /* ---- list helpers ---- */
   const listTools = (li: Component) => {
     const list = li.parent()!;
@@ -325,7 +275,7 @@ export function setupTools(editor: Editor) {
     const cell = closest(c, ['td', 'th']);
     const li = closest(c, ['li']);
     const img = tagOf(c) === 'img' ? c : undefined;
-    if (cell) contextBox.append(tableTools(cell));
+    if (cell) contextBox.append(...tableCards(editor, cell, render));
     if (li) contextBox.append(listTools(li));
     if (img) contextBox.append(imageTools(img));
     contextBox.append(elementTools(c));

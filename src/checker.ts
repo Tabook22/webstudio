@@ -3,6 +3,7 @@ import { lang, t } from './i18n';
 import * as I from './icons';
 import { icon } from './icons';
 import { h, modal } from './ui';
+import { Grid } from './table';
 
 type Pair = [string, string];
 const tx = (p: Pair) => p[lang === 'ar' ? 1 : 0];
@@ -63,6 +64,9 @@ export function checkPage(editor: Editor, title: string): Issue[] {
       if (!labelled) add('warn', ['Form field without a <label>. Visitors may not know what to type.', 'حقل نموذج بدون <label>. قد لا يعرف الزائر ماذا يكتب.'], c);
     }
     if (tag === 'table' && !c.find('th').length) add('tip', ['Table has no header cells (<th>).', 'الجدول بدون خلايا عناوين (<th>).'], c);
+    if (tag === 'table' && new Grid(c).unevenRows()) {
+      add('warn', ['Some rows of this table have a different number of cells. A merge (colspan/rowspan) may be wrong.', 'بعض صفوف هذا الجدول فيها عدد مختلف من الخلايا. قد يكون الدمج (colspan/rowspan) خاطئًا.'], c);
+    }
   }
 
   const seen = new Map<string, Component>();

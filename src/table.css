@@ -1,0 +1,34 @@
+/* Table editor: size picker, structure card and style card. */
+
+.tsize { align-items: center; }
+.tsize-grid { display: grid; gap: 4px; width: min(360px, 100%); padding: 10px; border-radius: 12px; background: var(--panel-2); }
+.tsize-grid span {
+  aspect-ratio: 1; border-radius: 4px; border: 1.5px solid var(--line); background: var(--field); cursor: pointer;
+  transition: background .08s, border-color .08s;
+}
+.tsize-grid span.on { background: color-mix(in srgb, var(--accent) 22%, var(--field)); border-color: var(--accent); }
+.tsize-label { font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+
+.ctx-title.row-title { display: flex; justify-content: space-between; align-items: center; }
+.tsize-badge {
+  font: 700 11px ui-monospace, Consolas, monospace; letter-spacing: 0; text-transform: none;
+  background: var(--accent-soft); color: var(--accent); padding: 2px 7px; border-radius: 6px;
+}
+.merge-row { margin-top: 6px; }
+.merge-row .tool:not(:disabled) { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); color: var(--accent); }
+.tool:disabled { opacity: .45; cursor: not-allowed; }
+.tool:disabled:hover { border-color: var(--line); color: inherit; }
+
+.table-style { display: flex; flex-direction: column; gap: 7px; }
+.table-style .mini-title { margin-top: 4px; color: var(--muted); font-size: 11.5px; }
+.border-modes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.border-mode {
+  display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 7px 2px 5px;
+  border: 1px solid var(--line); border-radius: 9px; background: var(--field); color: var(--text);
+}
+.border-mode small { font-size: 10.5px; color: var(--muted); }
+.border-mode:hover { border-color: var(--accent); color: var(--accent); }
+.border-mode.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.border-mode.on small { color: var(--accent); }
+.tstyle-row { display: flex; flex-direction: column; gap: 6px; }
+.mini-swatches { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; }

@@ -3,7 +3,8 @@ import { t, type Key } from './i18n';
 import * as I from './icons';
 import { icon } from './icons';
 import type { ToolActions } from './tools';
-import { h } from './ui';
+import { h, toast } from './ui';
+import { addColumn, addRow, mergeCells } from './table';
 
 const tagOf = (c: Component) => String(c.get('tagName') || 'div').toLowerCase();
 const TEXTY = new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'a', 'li', 'span', 'blockquote', 'td', 'th', 'button', 'label', 'strong', 'em']);
@@ -43,6 +44,22 @@ export function setupFloatBar(editor: Editor, tools: ToolActions) {
 
   let hiddenWhileEditing = false;
 
+  /** Quick table actions for a selected cell (the full set is in the right panel). */
+  function tableButtons(cell: Component) {
+    const go = (fn: () => Component | string | undefined) => () => {
+      const res = fn();
+      if (typeof res === 'string') return toast(res, 'error');
+      if (res) editor.select(res);
+    };
+    const selected = editor.getSelectedAll().filter((x) => ['td', 'th'].includes(tagOf(x)));
+    return [
+      h('span', { class: 'fb-sep' }),
+      button('rowBelow', I.ArrowDown, go(() => addRow(cell, true))),
+      button('colAfter', document.documentElement.dir === 'rtl' ? I.ArrowLeft : I.ArrowRight, go(() => addColumn(cell, true))),
+      selected.length > 1 ? button('mergeCells', I.Columns2, go(() => mergeCells(selected)), { class: 'on' }) : '',
+    ];
+  }
+
   function render() {
     const c = editor.getSelected();
     if (!c || c.get('type') === 'wrapper' || hiddenWhileEditing) {
@@ -74,6 +91,7 @@ export function setupFloatBar(editor: Editor, tools: ToolActions) {
       colorPicker('bgColor', I.PaintBucket, toHex(computed?.backgroundColor || '', '#ffffff'), tools.bgColor),
       tag === 'a' ? button('link', I.Link, tools.link) : '',
       tag === 'img' ? button('replaceImage', I.Image, () => tools.replaceImage(c)) : '',
+      ...(tag === 'td' || tag === 'th' ? tableButtons(c) : []),
       sep(),
       c.parent() && c.parent()!.get('type') !== 'wrapper' ? button('selectParent', I.CornerLeftUp, () => editor.select(c.parent()!)) : '',
       button('duplicate', I.Copy, () => {

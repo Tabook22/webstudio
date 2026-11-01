@@ -3,6 +3,7 @@ import './styles.css';
 import './panels.css';
 import './theme.css';
 import './missions.css';
+import './table.css';
 import type { Component } from 'grapesjs';
 import { applyI18n, lang, setLang, t } from './i18n';
 import * as Icons from './icons';
@@ -18,6 +19,7 @@ import { setupFloatBar } from './floatbar';
 import { setupXray } from './xray';
 import { setupFlash } from './flash';
 import { setupMissions } from './missions';
+import { setupTableInsert } from './table';
 import { KITS, applyKit, currentKitId, kitLabel, kitMood } from './kits';
 import { RTL_TEMPLATES, TEMPLATES, templatePreviewHtml } from './templates';
 import { $, debounce, h, modal, toast } from './ui';
@@ -68,6 +70,7 @@ const code = new CodePanel({
 const tools = setupTools(editor);
 setupFloatBar(editor, tools);
 setupXray(editor);
+setupTableInsert(editor);
 setupMedia(editor, {
   insert: (content) => insertAndSelect(content),
   isUsed: (path) => {

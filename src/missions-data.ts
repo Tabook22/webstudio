@@ -126,6 +126,11 @@ export const MISSIONS: Mission[] = [
         hint: ['Double-click a header cell (the bold top row) and type.', 'انقر نقرًا مزدوجًا على خلية العنوان (الصف العلوي العريض) واكتب.'],
         check: (x) => find(x, 'th').some((c) => text(c) && !/^(name|age|city|day|subject)$/i.test(text(c))),
       },
+      {
+        id: 'merge', title: ['Merge two cells (colspan / rowspan)', 'ادمج خليتين (colspan / rowspan)'],
+        hint: ['Click a cell, Shift + click the cell next to it, then press Merge cells.', 'انقر على خلية، ثم Shift + نقر على الخلية المجاورة، ثم اضغط دمج الخلايا.'],
+        check: (x) => /<t[dh][^>]*\s(colspan|rowspan)="[2-9]/.test(x.html),
+      },
     ],
   },
   {
