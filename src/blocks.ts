@@ -107,7 +107,7 @@ export function registerBlocks(editor: Editor) {
       content: b.content as any,
       activate: b.activate,
       select: b.select ?? true,
-      attributes: { title: tx(b.label) },
+      attributes: { title: tx(b.label), 'data-block': b.id },
     });
   }
 }

@@ -7,7 +7,8 @@ export {
   FolderOpen, Save, FolderDown, Download, Languages, ZoomIn, Copy, Trash2, ArrowUp, ArrowDown,
   ArrowLeft, ArrowRight, Plus, X, Code, Paintbrush, Info, LayoutTemplate, Globe, Map, Layers,
   Blocks, Columns4, Rows3, Upload, Palette, PanelsTopLeft, CornerLeftUp, MoveVertical,
-  Moon, Sun, ScanEye, Pencil, Sparkles, SwatchBook, PaintBucket, Baseline, LayoutGrid, Ellipsis, Check,
+  Moon, Sun, ScanEye, Pencil, Target, Trophy, Lightbulb, RotateCcw, ChevronLeft, ChevronRight,
+  CircleCheckBig, Circle, Rocket, Sparkles, SwatchBook, PaintBucket, Baseline, LayoutGrid, Ellipsis, Check,
 } from 'lucide-static';
 
 /** Inline an icon SVG string, sized for UI chrome. */

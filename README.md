@@ -15,6 +15,7 @@ A teaching tool for designing websites by **drag and drop** while seeing the
 | **Modes** | **Visual**, **Split** (page above, code below, drag the bar to resize) and **Code** |
 | **Linked code** | Click an element → its HTML lines *and* the CSS rules that style it light up. Click a line of code → that element is selected on the page. Typing in the code updates the page live |
 | **Teaching aids** | “What is this?” card explains the selected tag in plain language · breadcrumb (`body › section › h2`) · Structure tab shows the DOM tree · projector size button |
+| **Missions** 🏆 | 7 guided lessons (38 steps) checked automatically as students work: My first page · Lists & tables · Pictures & links · Colours & style · Boxes & layout · Make it interactive (JS) · Ready to publish. A banner over the page shows the current step; **Show me** opens the right tab and highlights the button or block to use; each finished mission earns a badge (with confetti). Start on a new blank page or the current one. Progress is kept in the browser (Missions → Reset all progress) |
 | **Look & feel** | Floating “studio” panels, Inter / IBM Plex Sans Arabic fonts, light and dark editor themes (☾ button; follows the computer’s setting at first), a ⋯ menu for page settings, paste HTML, projector size and language |
 | **Floating toolbar** | Appears right under the selected element on the page: tag name, edit text, bold, italic, alignment, text and background colour, link / replace image, select parent, duplicate, delete |
 | **What just changed** | After every visual action a small card shows the exact HTML and CSS lines it added or removed (✨ button turns it off). Hidden in Split/Code mode, where the code is already visible |
@@ -57,6 +58,7 @@ can be served from any folder on any web server (no backend needed yet).
 - `src/serialize.ts` — prints the page as tidy, indented HTML and records where each element sits in the text; this is what links canvas ↔ code.
 - `src/cssparser.ts` — keeps CSS as written (GrapesJS’ default parser expands `padding: 8px 16px` into four lines).
 - `src/assets.ts` — maps embedded images to `images/…` file paths.
+- `src/missions-data.ts` — the missions: each step is a title, a hint, where “Show me” points, and a `check(ctx)` function. Add a mission by adding an entry here.
 - `src/project.ts` — browser storage (IndexedDB), ZIP / folder import and export, starter templates.
 
 ## Roadmap

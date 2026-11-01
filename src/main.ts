@@ -2,6 +2,7 @@ import 'grapesjs/dist/css/grapes.min.css';
 import './styles.css';
 import './panels.css';
 import './theme.css';
+import './missions.css';
 import type { Component } from 'grapesjs';
 import { applyI18n, lang, setLang, t } from './i18n';
 import * as Icons from './icons';
@@ -16,6 +17,7 @@ import { openPreview, setupScripting } from './scripting';
 import { setupFloatBar } from './floatbar';
 import { setupXray } from './xray';
 import { setupFlash } from './flash';
+import { setupMissions } from './missions';
 import { KITS, applyKit, currentKitId, kitLabel, kitMood } from './kits';
 import { RTL_TEMPLATES, TEMPLATES, templatePreviewHtml } from './templates';
 import { $, debounce, h, modal, toast } from './ui';
@@ -445,6 +447,7 @@ async function saveFolder(pickNew = false) {
     await save(true);
     const name = await saveToFolder(project.id, siteFiles(), pickNew);
     toast(`${t('savedFolder')}: ${name}`);
+    missions.event('folder');
   } catch (err: any) {
     if (err?.name !== 'AbortError') {
       console.error(err);
@@ -456,6 +459,7 @@ async function saveFolder(pickNew = false) {
 function preview() {
   const { indexHtml, css, js } = siteFiles();
   openPreview(fromCode(indexHtml), fromCode(css), js);
+  missions.event('preview');
 }
 
 async function pasteHtmlDialog() {
@@ -515,10 +519,14 @@ $('#btn-folder').addEventListener('click', (e) => saveFolder((e as MouseEvent).s
 $('#btn-zip').addEventListener('click', async () => {
   await save(true);
   await downloadZip(project.name, siteFiles());
+  missions.event('zip');
 });
 $('#btn-preview').addEventListener('click', preview);
 $('#btn-paste').addEventListener('click', pasteHtmlDialog);
-$('#btn-check').addEventListener('click', () => showCheck(editor, project.title));
+$('#btn-check').addEventListener('click', () => {
+  missions.event('check');
+  showCheck(editor, project.title);
+});
 $('#btn-kits').addEventListener('click', kitsDialog);
 
 /* the ⋯ menu */
@@ -543,6 +551,18 @@ document.addEventListener('click', (e) => {
   if (!moreMenu.hidden && !moreMenu.contains(e.target as Node)) closeMore();
 });
 window.addEventListener('keydown', (e) => e.key === 'Escape' && closeMore());
+
+const missions = setupMissions(editor, {
+  context: () => {
+    const f = code.files();
+    return { editor, all: editor.getWrapper()!.find('*'), html: f.indexHtml, css: f.css, js: code.jsView.state.doc.toString(), meta: meta() };
+  },
+  startOnNewPage: async (name) => {
+    if (dirty) await save(true);
+    load(createProject(name, 'blank', lang));
+    await save(true);
+  },
+});
 
 const flash = setupFlash({
   onOpenCode: () => setMode('split'),
