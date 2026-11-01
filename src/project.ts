@@ -13,6 +13,8 @@ export interface Project {
   /** Inside of <body>, code form (images as images/… paths). */
   html: string;
   css: string;
+  /** script.js (may be missing in projects saved before JavaScript support). */
+  js?: string;
   assets: Asset[];
   updatedAt: number;
 }
@@ -123,6 +125,7 @@ export function createProject(name: string, template: TemplateId, siteLang: 'en'
 export interface SiteFiles {
   indexHtml: string;
   css: string;
+  js?: string;
   assets: Asset[];
 }
 
@@ -131,6 +134,7 @@ export async function downloadZip(name: string, files: SiteFiles) {
   const folder = zip.folder(slug(name))!;
   folder.file('index.html', files.indexHtml);
   folder.file('style.css', files.css);
+  if (files.js?.trim()) folder.file('script.js', files.js);
   for (const a of files.assets) folder.file(a.path, dataUrlToBlob(a.dataUrl));
   const blob = await zip.generateAsync({ type: 'blob' });
   triggerDownload(blob, `${slug(name)}.zip`);
@@ -176,6 +180,7 @@ export async function saveToFolder(projectId: string, files: SiteFiles, pickNew 
   };
   await write(dir!, 'index.html', files.indexHtml);
   await write(dir!, 'style.css', files.css);
+  if (files.js?.trim()) await write(dir!, 'script.js', files.js);
   for (const a of files.assets) {
     const parts = a.path.split('/');
     let d: FileSystemDirectoryHandle = dir!;
@@ -193,6 +198,7 @@ export interface ImportedSite {
   siteLang?: 'en' | 'ar';
   html: string;
   css: string;
+  js?: string;
   assets: Asset[];
 }
 
@@ -225,6 +231,9 @@ async function importFromFiles(files: LooseFile[], fallbackName: string): Promis
     ? cssFiles.filter((f) => linkHrefs.includes(rel(f.path)))
     : cssFiles.filter((f) => rel(f.path).split('/').length === 1);
   const cssParts = await Promise.all(chosenCss.map((f) => f.read()));
+  const jsFiles = files.filter((f) => parsed.scriptSrcs.includes(rel(f.path)));
+  const jsParts = await Promise.all(jsFiles.map((f) => f.read()));
+  if (parsed.js) jsParts.push(parsed.js);
   if (parsed.headCss.trim()) cssParts.push(parsed.headCss);
 
   const assets: Asset[] = [];
@@ -238,6 +247,7 @@ async function importFromFiles(files: LooseFile[], fallbackName: string): Promis
     siteLang: parsed.siteLang,
     html: parsed.body.replace(/(src|href)=(["'])\.\//g, '$1=$2'),
     css: cssParts.join('\n'),
+    js: jsParts.join('\n\n'),
     assets,
   };
 }

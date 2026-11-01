@@ -2,6 +2,8 @@ import type { Component, Editor } from 'grapesjs';
 import { EditorView, basicSetup } from 'codemirror';
 import { html as htmlLang } from '@codemirror/lang-html';
 import { css as cssLang } from '@codemirror/lang-css';
+import { javascript } from '@codemirror/lang-javascript';
+import { abbreviationTracker } from '@emmetio/codemirror6-plugin';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { EditorState, StateEffect, StateField, type Range } from '@codemirror/state';
 import { Decoration, type DecorationSet } from '@codemirror/view';
@@ -34,8 +36,13 @@ interface CodePanelOptions {
   editor: Editor;
   htmlParent: HTMLElement;
   cssParent: HTMLElement;
+  jsParent: HTMLElement;
   getMeta: () => PageMeta;
   setMeta: (m: Partial<PageMeta>) => void;
+  /** script.js was edited. */
+  onJs: (js: string) => void;
+  /** The stylesheet was regenerated (used to load Google fonts in the canvas). */
+  onCss: (css: string) => void;
 }
 
 /**
@@ -45,6 +52,7 @@ interface CodePanelOptions {
 export class CodePanel {
   readonly htmlView: EditorView;
   readonly cssView: EditorView;
+  readonly jsView: EditorView;
   private ranges: CodeRange[] = [];
   private htmlDirty = false;
   private cssDirty = false;
@@ -61,6 +69,7 @@ export class CodePanel {
         extensions: [
           ...common,
           htmlLang(),
+          abbreviationTracker({ syntax: 'html' as any }),
           EditorView.updateListener.of((u) => {
             if (u.docChanged && !this.writing) {
               this.htmlDirty = true;
@@ -80,6 +89,7 @@ export class CodePanel {
         extensions: [
           ...common,
           cssLang(),
+          abbreviationTracker({ syntax: 'css' as any }),
           EditorView.updateListener.of((u) => {
             if (u.docChanged && !this.writing) {
               this.cssDirty = true;
@@ -87,6 +97,18 @@ export class CodePanel {
             }
           }),
           EditorView.domEventHandlers({ blur: () => this.onBlur() }),
+        ],
+      }),
+    });
+
+    this.jsView = new EditorView({
+      parent: o.jsParent,
+      state: EditorState.create({
+        extensions: [
+          basicSetup, oneDark, EditorView.lineWrapping, javascript(),
+          EditorView.updateListener.of((u) => {
+            if (u.docChanged && !this.writing) o.onJs(u.state.doc.toString());
+          }),
         ],
       }),
     });
@@ -120,6 +142,19 @@ export class CodePanel {
   private applyCssNow() {
     this.o.editor.setStyle(fromCode(this.cssView.state.doc.toString()));
     this.settle('css');
+  }
+
+  setJs(js: string) {
+    this.write(this.jsView, js);
+  }
+
+  /** Insert text at the cursor of script.js (or at the end). */
+  insertJs(text: string) {
+    const v = this.jsView;
+    const at = v.hasFocus ? v.state.selection.main.head : v.state.doc.length;
+    const prefix = at > 0 && v.state.doc.sliceString(at - 1, at) !== '\n' ? '\n\n' : '';
+    v.dispatch({ changes: { from: at, insert: prefix + text }, selection: { anchor: at + prefix.length + text.length }, scrollIntoView: true });
+    v.focus();
   }
 
   /** Drop unapplied edits (e.g. another website was opened) and redraw. */
@@ -173,6 +208,7 @@ export class CodePanel {
     if (!this.cssDirty) {
       this.write(this.cssView, css);
     }
+    this.o.onCss(css);
     this.highlightSelected(false);
   }
 

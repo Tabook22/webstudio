@@ -1,9 +1,12 @@
 import type { Component } from 'grapesjs';
 import { toCode } from './assets';
+import { googleFontsHref } from './fonts';
 
 export interface PageMeta {
   title: string;
   siteLang: 'en' | 'ar';
+  /** Link script.js before </body> (when the project has JavaScript). */
+  hasScript?: boolean;
 }
 
 export interface CodeRange {
@@ -106,13 +109,16 @@ class Writer {
 export function serializeDocument(wrapper: Component, meta: PageMeta, css: string) {
   const w = new Writer(css);
   const dir = meta.siteLang === 'ar' ? 'rtl' : 'ltr';
+  const fonts = googleFontsHref(css);
   w.out =
     `<!DOCTYPE html>\n<html lang="${meta.siteLang}" dir="${dir}">\n<head>\n` +
     `${IND}<meta charset="UTF-8">\n` +
     `${IND}<meta name="viewport" content="width=device-width, initial-scale=1.0">\n` +
     `${IND}<title>${escHtml(meta.title)}</title>\n` +
+    (fonts ? `${IND}<link rel="stylesheet" href="${fonts.replace(/&/g, '&amp;')}">\n` : '') +
     `${IND}<link rel="stylesheet" href="style.css">\n</head>\n<body>\n`;
   wrapper.components().forEach((c: Component) => w.block(c, 1));
+  if (meta.hasScript) w.out += `${IND}<script src="script.js"></script>\n`;
   w.out += '</body>\n</html>\n';
   return { code: w.out, ranges: w.ranges };
 }
@@ -187,12 +193,22 @@ export interface ParsedDoc {
   title?: string;
   siteLang?: 'en' | 'ar';
   headCss: string;
+  /** Inline <script> contents. */
+  js: string;
+  /** src of external scripts (relative files only). */
+  scriptSrcs: string[];
 }
 
 /** Read a full HTML document (or a fragment) typed or uploaded by a student. */
 export function parseDocument(html: string): ParsedDoc {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const headCss = [...doc.querySelectorAll('style')].map((s) => s.textContent || '').join('\n');
+  const scripts = [...doc.querySelectorAll('script')];
+  const js = scripts.filter((s) => !s.src).map((s) => s.textContent || '').join('\n').trim();
+  const scriptSrcs = scripts
+    .map((s) => s.getAttribute('src') || '')
+    .filter((src) => src && !/^(https?:)?\/\//i.test(src))
+    .map((src) => src.replace(/^\.\//, ''));
   doc.querySelectorAll('style, script').forEach((s) => s.remove());
   const langAttr = doc.documentElement.getAttribute('lang') || '';
   const dirAttr = doc.documentElement.getAttribute('dir') || '';
@@ -202,5 +218,7 @@ export function parseDocument(html: string): ParsedDoc {
     title: doc.querySelector('title') ? doc.title : undefined,
     siteLang: hasHtmlTag ? (langAttr.startsWith('ar') || dirAttr === 'rtl' ? 'ar' : 'en') : undefined,
     headCss,
+    js,
+    scriptSrcs,
   };
 }

@@ -15,6 +15,12 @@ A teaching tool for designing websites by **drag and drop** while seeing the
 | **Modes** | **Visual**, **Split** (page above, code below, drag the bar to resize) and **Code** |
 | **Linked code** | Click an element → its HTML lines *and* the CSS rules that style it light up. Click a line of code → that element is selected on the page. Typing in the code updates the page live |
 | **Teaching aids** | “What is this?” card explains the selected tag in plain language · breadcrumb (`body › section › h2`) · Structure tab shows the DOM tree · projector size button |
+| **Images tab** | The project's image library. Drop pictures from the computer (or click to upload), then drag a thumbnail onto the page — or onto the Background box. Hover a thumbnail for Insert / Use as background / Delete. Images can also be dropped from the desktop straight onto the page |
+| **Backgrounds** | One card for the selected element — or the whole page (“Page” button): 16 colour swatches + custom colour, 6 gradients, an image drop box with Fill / Fit / Tile, “Darken image” and “Stay fixed when scrolling” |
+| **Quick effects** | Rounded, shadow, border, padding, center, and hover effects (grow, lift) written as real `:hover` CSS rules |
+| **CSS tools** | Classes & states panel (add a class, style `:hover`), 20 fonts including Google Fonts (the `<link>` is added to the HTML automatically) |
+| **JavaScript** | `script.js` tab with 8 ready-made examples (click events, dark mode, show/hide, form check, counter…). **Run** opens the page; `console.log`, warnings and errors (with the script.js line number) appear in the **Console** tab |
+| **HTML tools** | **Check page** finds beginner mistakes (missing alt text, several `<h1>`, skipped heading levels, empty links, fields without labels, duplicate ids) and jumps to each one · Emmet shortcuts in the code (`ul>li*3` + Tab) · HTML5 blocks: header, main, article, aside, accordion (`<details>`), audio, code sample, embedded page |
 | **Files** | New website (blank / personal page / landing page) · My projects (autosaved in the browser) · Open a ZIP, HTML files or a folder · Save to a real folder (Chrome/Edge) · Download ZIP · Preview in a new tab · Paste HTML · Paste an image straight from the clipboard |
 
 Images live inside the project but always appear in the code and in downloads
@@ -24,6 +30,7 @@ as real files (`images/photo.png`). A download is a normal website folder:
 my-website/
   index.html
   style.css
+  script.js      (when the site has JavaScript)
   images/…
 ```
 

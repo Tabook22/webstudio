@@ -1,5 +1,6 @@
 import 'grapesjs/dist/css/grapes.min.css';
 import './styles.css';
+import './panels.css';
 import type { Component } from 'grapesjs';
 import { applyI18n, lang, setLang, t } from './i18n';
 import * as Icons from './icons';
@@ -7,6 +8,10 @@ import { icon } from './icons';
 import { createEditor } from './editor';
 import { CodePanel } from './code';
 import { setupTools } from './tools';
+import { setupMedia } from './media';
+import { showCheck } from './checker';
+import { syncCanvasFonts } from './fonts';
+import { openPreview, setupScripting } from './scripting';
 import { $, debounce, h, modal, toast } from './ui';
 import { addAsset, clearAssets, fileToDataUrl, fromCode, listAssets } from './assets';
 import { serializeBody, type PageMeta } from './serialize';
@@ -29,13 +34,21 @@ const editor = createEditor();
 if (import.meta.env.DEV) (window as any).editor = editor;
 let project: Project;
 
-const meta = (): PageMeta => ({ title: project.title, siteLang: project.siteLang });
+const meta = (): PageMeta => ({ title: project.title, siteLang: project.siteLang, hasScript: !!project.js?.trim() });
 
 const code = new CodePanel({
   editor,
   htmlParent: $('#code-html'),
   cssParent: $('#code-css'),
+  jsParent: $('#code-js'),
   getMeta: meta,
+  onJs: (js) => {
+    const hadScript = !!project.js?.trim();
+    project.js = js;
+    if (hadScript !== !!js.trim()) code.refresh();
+    markDirty();
+  },
+  onCss: (css) => syncCanvasFonts(editor.Canvas.getDocument(), css),
   setMeta: (m) => {
     Object.assign(project, m);
     applySiteDir();
@@ -44,6 +57,14 @@ const code = new CodePanel({
 });
 
 setupTools(editor);
+setupMedia(editor, {
+  insert: (content) => insertAndSelect(content),
+  isUsed: (path) => {
+    const f = code.files();
+    return f.indexHtml.includes(path) || f.css.includes(path);
+  },
+});
+setupScripting(code, () => preview());
 if (import.meta.env.DEV) (window as any).code = code;
 
 /* ---------- project state ---------- */
@@ -66,19 +87,16 @@ function applySiteDir() {
 }
 editor.on('canvas:frame:load', applySiteDir);
 
-function usedAssets(html: string, css: string) {
-  return listAssets().filter((a) => html.includes(a.path) || css.includes(a.path));
-}
-
 function snapshot(): Project {
   const { css } = code.files();
   const html = serializeBody(editor.getWrapper()!, css);
-  return { ...project, html, css, assets: usedAssets(html, css) };
+  // The whole image library is kept, used or not, like a real images/ folder.
+  return { ...project, html, css, js: code.jsView.state.doc.toString(), assets: listAssets() };
 }
 
 function siteFiles() {
   const { indexHtml, css } = code.files();
-  return { indexHtml, css, assets: usedAssets(indexHtml, css) };
+  return { indexHtml, css, js: project.js ?? '', assets: listAssets() };
 }
 
 async function save(quiet = false) {
@@ -114,6 +132,7 @@ function load(p: Project) {
   editor.setStyle(fromCode(p.css));
   editor.setComponents(fromCode(p.html));
   editor.UndoManager.clear();
+  code.setJs(p.js ?? '');
   nameInput.value = p.name;
   document.title = `${p.name} · ${t('appName')}`;
   applySiteDir();
@@ -141,6 +160,7 @@ function fromImport(site: ImportedSite): Project {
     siteLang: site.siteLang || 'en',
     html: site.html,
     css: site.css.trim() ? site.css : BASE_CSS,
+    js: site.js ?? '',
     assets: site.assets,
     updatedAt: Date.now(),
   };
@@ -370,11 +390,8 @@ async function saveFolder(pickNew = false) {
 }
 
 function preview() {
-  const { indexHtml, css } = siteFiles();
-  const html = fromCode(indexHtml).replace('<link rel="stylesheet" href="style.css">', `<style>\n${fromCode(css)}</style>`);
-  const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-  window.open(url, '_blank');
-  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  const { indexHtml, css, js } = siteFiles();
+  openPreview(fromCode(indexHtml), fromCode(css), js);
 }
 
 async function pasteHtmlDialog() {
@@ -393,6 +410,12 @@ function insertAfterSelected(content: any) {
     return parent.components().add(content, { at: c.index() + 1 });
   }
   return editor.getWrapper()!.append(content);
+}
+
+function insertAndSelect(content: any) {
+  const added = insertAfterSelected(content);
+  const first = Array.isArray(added) ? added[0] : added;
+  if (first) editor.select(first);
 }
 
 function insertHtml(html: string) {
@@ -431,6 +454,7 @@ $('#btn-zip').addEventListener('click', async () => {
 });
 $('#btn-preview').addEventListener('click', preview);
 $('#btn-paste').addEventListener('click', pasteHtmlDialog);
+$('#btn-check').addEventListener('click', () => showCheck(editor, project.title));
 $('#btn-page').addEventListener('click', pageDialog);
 $('#btn-lang').addEventListener('click', async () => {
   if (dirty) await save(true);

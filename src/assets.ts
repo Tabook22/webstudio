@@ -11,6 +11,35 @@ export interface Asset {
 const byPath = new Map<string, string>();
 const byData = new Map<string, string>();
 
+const listeners = new Set<() => void>();
+let notifyQueued = false;
+
+/** Called (batched) whenever the image library changes. */
+export function onAssetsChange(fn: () => void) {
+  listeners.add(fn);
+}
+
+function notify() {
+  if (notifyQueued) return;
+  notifyQueued = true;
+  queueMicrotask(() => {
+    notifyQueued = false;
+    listeners.forEach((fn) => fn());
+  });
+}
+
+export function getAssetData(path: string) {
+  return byPath.get(path.replace(/^\.\//, ''));
+}
+
+export function removeAsset(path: string) {
+  const data = byPath.get(path);
+  if (!data) return;
+  byPath.delete(path);
+  byData.delete(data);
+  notify();
+}
+
 const DATA_URL_RE = /data:image\/[a-z0-9+.-]+[;,][^"'\s)]*/gi;
 
 const EXT: Record<string, string> = {
@@ -21,6 +50,7 @@ const EXT: Record<string, string> = {
 export function clearAssets() {
   byPath.clear();
   byData.clear();
+  notify();
 }
 
 export function listAssets(): Asset[] {
@@ -56,6 +86,7 @@ export function addAsset(dataUrl: string, name?: string, exactPath?: string): st
   }
   byPath.set(path, dataUrl);
   byData.set(dataUrl, path);
+  notify();
   return path;
 }
 

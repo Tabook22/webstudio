@@ -12,6 +12,7 @@ const CATS: Record<string, Pair> = {
   layout: ['Layout', 'التخطيط'],
   forms: ['Forms', 'النماذج'],
   ready: ['Ready-made parts', 'أجزاء جاهزة'],
+  html5: ['HTML5 elements', 'عناصر HTML5'],
 };
 
 interface BlockDef {
@@ -86,6 +87,14 @@ const BLOCKS: BlockDef[] = [
   { id: 'navbar', cat: 'ready', label: ['Navigation bar', 'شريط التنقل'], icon: I.Menu, content: `<nav class="navbar"><a class="brand" href="#">My Site</a><ul><li><a href="#">Home</a></li><li><a href="#">About</a></li><li><a href="#">Contact</a></li></ul></nav>${S.nav}` },
   { id: 'hero', cat: 'ready', label: ['Hero banner', 'واجهة رئيسية'], icon: I.PanelTop, content: `<header class="hero"><h1>Welcome to my website</h1><p>A short sentence about what this site is for.</p><a class="btn" href="#" style="background:#ffffff;color:#4f46e5;">Learn more</a></header>${S.hero}${S.btn}` },
   { id: 'features', cat: 'ready', label: ['Three features', 'ثلاث مزايا'], icon: I.LayoutTemplate, content: `<section class="section"><div class="row"><div class="card"><h3>Fast</h3><p>Explain the first idea.</p></div><div class="card"><h3>Simple</h3><p>Explain the second idea.</p></div><div class="card"><h3>Friendly</h3><p>Explain the third idea.</p></div></div></section>${S.section}${S.cols}${S.card}` },
+  { id: 'header-el', cat: 'html5', label: ['Header', 'ترويسة'], icon: I.PanelTop, content: '<header style="padding:24px;border-bottom:1px solid #e2e8f0;"><h1>Site name</h1><p>A short tagline.</p></header>' },
+  { id: 'main-el', cat: 'html5', label: ['Main', 'المحتوى الرئيسي'], icon: I.Square, content: '<main style="padding:24px;min-height:120px;"><h2>Main content</h2><p>The most important part of the page goes inside &lt;main&gt;.</p></main>' },
+  { id: 'article', cat: 'html5', label: ['Article', 'مقالة'], icon: I.Text, content: '<article style="padding:16px 0;"><h2>Article title</h2><p><small>Written by me · 1 Nov 2026</small></p><p>An article is a complete piece of content, like a blog post or news story.</p></article>' },
+  { id: 'aside', cat: 'html5', label: ['Aside', 'جانبي'], icon: I.PanelsTopLeft, content: '<aside style="padding:16px;background:#f8fafc;border-inline-start:4px solid #0891b2;border-radius:8px;"><h3>Did you know?</h3><p>An aside holds extra information next to the main content.</p></aside>' },
+  { id: 'details', cat: 'html5', label: ['Accordion', 'قائمة قابلة للطي'], icon: I.ChevronDown, content: '<details style="border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;margin:8px 0;"><summary style="font-weight:600;cursor:pointer;">Click to open</summary><p>Hidden text that appears when the visitor clicks. No JavaScript needed!</p></details>' },
+  { id: 'audio', cat: 'html5', label: ['Audio', 'صوت'], icon: I.SquarePlay, content: '<audio controls src="" style="width:100%;"></audio>' },
+  { id: 'codeblock', cat: 'html5', label: ['Code sample', 'مثال كود'], icon: I.Code, content: '<pre style="background:#1e293b;color:#e2e8f0;padding:16px;border-radius:8px;overflow:auto;"><code>&lt;h1&gt;Hello!&lt;/h1&gt;</code></pre>' },
+  { id: 'iframe', cat: 'html5', label: ['Embed page', 'تضمين صفحة'], icon: I.Globe, content: '<iframe src="https://example.com" title="Embedded page" style="width:100%;height:300px;border:1px solid #e2e8f0;border-radius:8px;"></iframe>' },
   { id: 'footer', cat: 'ready', label: ['Footer', 'تذييل'], icon: I.PanelBottom, content: `<footer class="footer"><p>© 2026 My Website. All rights reserved.</p></footer>${S.footer}` },
 ];
 

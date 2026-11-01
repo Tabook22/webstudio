@@ -5,6 +5,7 @@ import { lang, t } from './i18n';
 import { registerBlocks } from './blocks';
 import { addAsset, fileToDataUrl } from './assets';
 import { parseCss } from './cssparser';
+import { FONT_OPTIONS } from './fonts';
 
 type Pair = [string, string];
 const tx = (p: Pair) => p[lang === 'ar' ? 1 : 0];
@@ -44,7 +45,9 @@ const PROP_LABELS: Record<string, Pair> = {
 const SECTORS: { id: string; name: Pair; open?: boolean; properties: (string | object)[] }[] = [
   {
     id: 'typography', name: ['Text', 'النص'], open: true,
-    properties: ['font-family', 'font-size', 'font-weight', 'color', 'text-align', 'line-height', 'letter-spacing', 'text-decoration',
+    properties: [
+      { property: 'font-family', type: 'select', default: FONT_OPTIONS[0][1], options: FONT_OPTIONS.map(([label, id]) => ({ id, label })) },
+      'font-size', 'font-weight', 'color', 'text-align', 'line-height', 'letter-spacing', 'text-decoration',
       { property: 'text-transform', type: 'select', default: 'none', options: [{ id: 'none' }, { id: 'uppercase' }, { id: 'lowercase' }, { id: 'capitalize' }] }],
   },
   {
@@ -98,7 +101,7 @@ export function createEditor(): Editor {
     blockManager: { appendTo: '#blocks' },
     layerManager: { appendTo: '#layers' },
     traitManager: { appendTo: '#traits' },
-    selectorManager: { componentFirst: true },
+    selectorManager: { appendTo: '#selectors', componentFirst: true },
     styleManager: { appendTo: '#styles', sectors: SECTORS as any },
     deviceManager: {
       devices: [
@@ -112,13 +115,17 @@ export function createEditor(): Editor {
       multiUpload: true,
       autoAdd: true,
       // Keep uploaded images inside the project with a readable file name.
-      uploadFile: async (e: any) => {
+      // Also used when an image file is dropped straight onto the canvas.
+      uploadFile: async (e: any, done?: (res: { data: { src: string }[] }) => void) => {
         const files: File[] = [...(e.dataTransfer ? e.dataTransfer.files : e.target.files)];
+        const data: { src: string }[] = [];
         for (const f of files.filter((f) => f.type.startsWith('image/'))) {
           const dataUrl = await fileToDataUrl(f);
           const path = addAsset(dataUrl, f.name);
           editor.Assets.add({ src: dataUrl, name: path } as any);
+          data.push({ src: dataUrl });
         }
+        done?.({ data });
       },
     },
     parser: { optionsHtml: { allowScripts: false, allowUnsafeAttr: false } as any, parserCss: parseCss as any },

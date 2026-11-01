@@ -46,6 +46,7 @@
       <div class="spacer"></div>
 
       <div class="group">
+        <button class="tb icon" id="btn-check" data-i18n-title="check"><i data-icon="SquareCheck"></i></button>
         <button class="tb icon" id="btn-paste" data-i18n-title="pasteHtml"><i data-icon="ClipboardPaste"></i></button>
         <button class="tb icon" id="btn-page" data-i18n-title="pageSettings"><i data-icon="Settings"></i></button>
         <button class="tb icon" id="btn-big" data-i18n-title="bigUi"><i data-icon="ZoomIn"></i></button>
@@ -58,10 +59,14 @@
       <aside class="panel left">
         <div class="tabs" role="tablist">
           <button class="active" data-tab="blocks"><i data-icon="Blocks"></i><span data-i18n="blocks"></span></button>
+          <button data-tab="media"><i data-icon="Images"></i><span data-i18n="images"></span></button>
           <button data-tab="layers"><i data-icon="Layers"></i><span data-i18n="structure"></span></button>
         </div>
-        <p class="hint" data-i18n="dragHint"></p>
-        <div class="tab-body" id="blocks" data-tab-body="blocks"></div>
+        <div class="tab-body" data-tab-body="blocks">
+          <p class="hint" data-i18n="dragHint"></p>
+          <div id="blocks"></div>
+        </div>
+        <div class="tab-body media-body" id="media" data-tab-body="media" hidden></div>
         <div class="tab-body" id="layers" data-tab-body="layers" hidden></div>
       </aside>
 
@@ -72,11 +77,31 @@
           <div class="code-head">
             <span class="file-label"><i data-icon="Globe"></i>index.html</span>
             <span class="code-hint" data-i18n="codeHint"></span>
+            <span class="code-hint emmet" data-i18n="emmetHint"></span>
             <span class="file-label"><i data-icon="Palette"></i>style.css</span>
           </div>
           <div class="code-grid">
             <div class="code-col"><div class="code-title">HTML · index.html</div><div id="code-html" class="cm-host" dir="ltr"></div></div>
-            <div class="code-col"><div class="code-title">CSS · style.css</div><div id="code-css" class="cm-host" dir="ltr"></div></div>
+            <div class="code-col">
+              <div class="code-tabs" role="tablist">
+                <button class="active" data-code-tab="css">CSS · style.css</button>
+                <button data-code-tab="js">JS · script.js</button>
+                <button data-code-tab="console"><span data-i18n="console"></span><b id="console-badge" hidden></b></button>
+              </div>
+              <div id="code-css" class="cm-host" dir="ltr" data-code-body="css"></div>
+              <div class="js-pane" data-code-body="js" hidden>
+                <div class="js-bar">
+                  <button class="js-run" id="btn-run"><i data-icon="Eye"></i><span data-i18n="run"></span></button>
+                  <select id="js-snippets"></select>
+                  <span class="js-note" data-i18n="jsNote"></span>
+                </div>
+                <div id="code-js" class="cm-host" dir="ltr"></div>
+              </div>
+              <div class="console-pane" data-code-body="console" hidden>
+                <div class="js-bar"><button class="js-run ghost" id="btn-console-clear" data-i18n="clear"></button></div>
+                <div id="console-out" class="console-out" dir="ltr"></div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -91,12 +116,19 @@
           <div id="element-info" class="element-info" hidden></div>
           <p id="nothing-selected" class="hint center-hint" data-i18n="nothingSelected"></p>
           <div id="context-tools"></div>
+          <div id="bg-tools" class="card-box"></div>
+          <div id="fx-tools" class="card-box" hidden></div>
           <details class="card-box" open>
             <summary class="box-title" data-i18n="settings"></summary>
             <div id="traits"></div>
           </details>
           <details class="card-box" open>
             <summary class="box-title" data-i18n="style"></summary>
+            <div class="selectors-wrap">
+              <div class="mini-title" data-i18n="classes"></div>
+              <p class="hint tight" data-i18n="classesHint"></p>
+              <div id="selectors"></div>
+            </div>
             <div id="styles"></div>
           </details>
         </div>

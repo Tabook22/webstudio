@@ -3,6 +3,7 @@ import { lang, t, type Key } from './i18n';
 import * as I from './icons';
 import { icon } from './icons';
 import { askText, h } from './ui';
+import { FONT_OPTIONS } from './fonts';
 
 type Pair = [string, string];
 const tx = (p: Pair) => p[lang === 'ar' ? 1 : 0];
@@ -129,6 +130,16 @@ export function setupTools(editor: Editor) {
     if (c && sizeSelect.value) c.addStyle({ 'font-size': sizeSelect.value });
   });
 
+  const fontSelect = h('select', { class: 'size-select font-select', title: t('font'), 'aria-label': t('font') },
+    h('option', { value: '' }, t('font')),
+    ...FONT_OPTIONS.map(([label, value]) => h('option', { value, style: `font-family:${value}` }, label)),
+  );
+  fontSelect.addEventListener('change', () => {
+    const c = sel();
+    if (c && fontSelect.value) c.addStyle({ 'font-family': fontSelect.value });
+    updateState();
+  });
+
   const insertLink = async () => {
     const d = doc();
     const s = d.getSelection();
@@ -168,6 +179,7 @@ export function setupTools(editor: Editor) {
       sizeSelect,
       btn('link', I.Link, insertLink),
     ),
+    h('div', { class: 'tool-row' }, fontSelect),
   );
 
   function updateState() {
@@ -182,6 +194,7 @@ export function setupTools(editor: Editor) {
     set(formatButtons.center, st['text-align'] === 'center');
     set(formatButtons.right, st['text-align'] === 'right');
     set(formatButtons.justify, st['text-align'] === 'justify');
+    fontSelect.value = FONT_OPTIONS.some(([, v]) => v === st['font-family']) ? st['font-family'] : '';
     sizeSelect.value = st['font-size'] && [...sizeSelect.options].some((o) => o.value === st['font-size']) ? st['font-size'] : '';
   }
 
