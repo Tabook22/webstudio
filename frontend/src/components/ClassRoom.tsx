@@ -7,8 +7,10 @@ import { StaffSignIn } from "./AdminDesk";
 
 export function StudioGate({ studio }: { studio: Studio }) {
   const { tx } = useI18n();
+  const [welcome, setWelcome] = useState(true);
   return (
     <div className="gate">
+      {welcome && <WelcomeSplash onContinue={() => setWelcome(false)} />}
       <div className="gate-card">
         <div className="gate-top">
           <span className="mark" aria-hidden="true" />
@@ -23,6 +25,34 @@ export function StudioGate({ studio }: { studio: Studio }) {
         </ol>
         <button type="button" className="tb help-open" onClick={() => studio.setModal({ type: "help" })}>{tx("Open the guide", "افتح الدليل")}</button>
         <ClassForms studio={studio} gate />
+      </div>
+    </div>
+  );
+}
+
+function WelcomeSplash({ onContinue }: { onContinue: () => void }) {
+  const { tx } = useI18n();
+  return (
+    <div className="splash-back">
+      <div className="splash" role="dialog" aria-modal="true" aria-labelledby="splash-title">
+        <div className="splash-top">
+          <span className="mark" aria-hidden="true" />
+          <LangSwitch />
+        </div>
+        <p className="splash-version" dir="ltr">Version 1.0</p>
+        <h1 id="splash-title" dir="ltr">Web Studio</h1>
+        <p className="splash-name" dir="rtl">استوديو الويب</p>
+        <p className="splash-by" dir="ltr">Designed by Nasser Tabook</p>
+        <p className="splash-by" dir="rtl">تصميم ناصر طابوق</p>
+        <div className="splash-purpose" dir="ltr">
+          <p>A classroom for learning how to build a real website.</p>
+          <p>Design the page, write the HTML, then check and save your work.</p>
+        </div>
+        <div className="splash-purpose" dir="rtl">
+          <p>صف لتعلّم كيف يُبنى موقع حقيقي.</p>
+          <p>صمّم الصفحة، واكتب HTML، ثم افحص عملك واحفظه.</p>
+        </div>
+        <button type="button" className="tb primary" autoFocus onClick={onContinue}>{tx("Continue", "متابعة")}</button>
       </div>
     </div>
   );
