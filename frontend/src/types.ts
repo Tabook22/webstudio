@@ -223,4 +223,5 @@ export type ModalState =
   | { type: "table"; path: number[] | null; tag: string }
   | { type: "mission"; id: string }
   | { type: "class" }
-  | { type: "admin" };
+  | { type: "admin" }
+  | { type: "help"; chapter?: string };

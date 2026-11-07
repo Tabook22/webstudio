@@ -1061,3 +1061,77 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   padding: 10px 12px 10px 54px; border: 0; background: transparent; color: #f5f0e8;
   font: 14px/1.55 Consolas, "Cascadia Mono", monospace; white-space: pre;
 }
+
+.help-open { margin: 4px 0 12px; }
+.help-back { z-index: 40; padding: 16px; }
+.help-book {
+  width: min(1180px, 100%);
+  height: min(860px, 100%);
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  background: #f7f7f7;
+  color: #1c1917;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  box-shadow: 0 24px 70px rgba(28, 25, 23, 0.28);
+  overflow: hidden;
+}
+.help-index {
+  display: flex; flex-direction: column; min-height: 0;
+  background: #fff; border-inline-end: 1px solid #e0e0e0;
+}
+.help-index > header {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 12px 12px 8px;
+}
+.help-index > header strong { font-size: 15px; }
+.help-search { display: block; padding: 0 12px 8px; }
+.help-search input {
+  width: 100%; box-sizing: border-box; padding: 7px 10px;
+  border: 1px solid #cfcfcf; border-radius: 6px; font: inherit; background: #fff;
+}
+.help-index nav { overflow: auto; padding: 4px 8px 16px; }
+.help-index section { margin: 0 0 10px; }
+.help-index h2 {
+  margin: 8px 8px 4px; font-size: 11px; letter-spacing: 0.04em;
+  text-transform: uppercase; color: #6b6b6b; font-weight: 700;
+}
+.help-index nav button {
+  display: block; width: 100%; text-align: start; padding: 6px 8px; margin: 0;
+  border: 0; border-radius: 6px; background: transparent; color: #1c1917; font: inherit; font-size: 13.5px;
+}
+.help-index nav button[aria-current="page"] { background: #e8f2fb; color: #0b4f86; }
+.help-index nav button:hover { background: #f3f3f3; }
+.help-index nav button[aria-current="page"]:hover { background: #d7e8f8; }
+.help-read { overflow: auto; padding: 28px 36px 48px; background: #fff; }
+.help-kicker { margin: 0 0 6px; color: #1a6fb5; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.help-read h1 { margin: 0 0 8px; font-size: 28px; line-height: 1.25; }
+.help-lead { margin: 0 0 18px; font-size: 17px; line-height: 1.5; color: #444; }
+.help-read h2 { margin: 26px 0 8px; font-size: 18px; }
+.help-read p { margin: 0 0 12px; font-size: 15px; line-height: 1.6; }
+.help-note {
+  padding: 12px 14px; background: #fff8e8; border: 1px solid #ead7a2; border-radius: 8px;
+}
+.help-steps { margin: 0 0 16px; padding-inline-start: 1.3em; }
+.help-steps li { margin: 0 0 8px; line-height: 1.55; }
+.help-figure { margin: 8px 0 18px; }
+.help-figure figcaption { margin-top: 8px; color: #666; font-size: 13px; line-height: 1.45; }
+.hb-fig { width: 100%; height: auto; display: block; border: 1px solid #e4e4e4; border-radius: 10px; background: #f3f3f3; }
+.help-tools { display: grid; gap: 10px; margin: 8px 0 16px; }
+.help-tools section {
+  padding: 12px 14px; border: 1px solid #e6e6e6; border-radius: 8px; background: #fafafa;
+}
+.help-tools h3 { margin: 0 0 2px; font-size: 16px; }
+.help-where { margin: 0 0 6px; color: #1a6fb5; font-size: 12.5px; font-weight: 700; }
+.help-tools p { margin: 0 0 6px; }
+.help-ex { color: #333; }
+.help-code {
+  margin: 0 0 14px; padding: 12px 14px; overflow: auto; border-radius: 8px;
+  background: #1c1917; color: #f5f5f4; font: 13px/1.5 Consolas, "Cascadia Mono", monospace;
+}
+@media (max-width: 860px) {
+  .help-book { grid-template-columns: 1fr; height: min(920px, 100%); }
+  .help-index { max-height: 34%; border-inline-end: 0; border-bottom: 1px solid #e0e0e0; }
+  .help-read { padding: 18px 16px 32px; }
+  .help-read h1 { font-size: 24px; }
+}

@@ -21,6 +21,7 @@ export function StudioGate({ studio }: { studio: Studio }) {
           <li><strong>2</strong><span>{tx("Paint colours, fonts, and layout", "لوّن الخطوط والألوان والتخطيط")}</span></li>
           <li><strong>3</strong><span>{tx("Check it, preview it, and download it", "افحصه، عاينه، ثم نزّله")}</span></li>
         </ol>
+        <button type="button" className="tb help-open" onClick={() => studio.setModal({ type: "help" })}>{tx("Open the guide", "افتح الدليل")}</button>
         <ClassForms studio={studio} gate />
       </div>
     </div>

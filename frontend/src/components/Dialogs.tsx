@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AdminDialog } from "./AdminDesk";
 import { ClassDialog } from "./ClassRoom";
+import { HelpBook } from "./HelpBook";
 import { previewDocument, templatePreview } from "../editor/html";
 import { FONTS, GRADIENTS, MISSIONS, SWATCHES, checkLinks, checkPage, pageFacts } from "../editor/learn";
 import { useI18n } from "../i18n";
@@ -12,6 +13,7 @@ export function Dialogs({ studio }: { studio: Studio }) {
   if (!modal) return null;
   if (modal.type === "class") return <ClassDialog studio={studio} />;
   if (modal.type === "admin") return <AdminDialog studio={studio} />;
+  if (modal.type === "help") return <HelpBook chapter={modal.chapter} onClose={() => studio.setModal(null)} />;
   if (modal.type === "new") return <NewDialog studio={studio} />;
   if (modal.type === "projects") return <ProjectsDialog studio={studio} />;
   if (modal.type === "open") return <OpenDialog studio={studio} />;

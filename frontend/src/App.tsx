@@ -36,6 +36,16 @@ function StudioShell() {
   }, [studio.spot, studio.tab, studio.mode, studio.codeTab]);
 
   useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "F1") return;
+      event.preventDefault();
+      studio.setModal({ type: "help" });
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [studio]);
+
+  useEffect(() => {
     if (!studio.toast) return;
     const timer = window.setTimeout(studio.clearToast, 2600);
     return () => window.clearTimeout(timer);
@@ -57,7 +67,14 @@ function StudioShell() {
     setHand("edit");
   }, [selKey, hand]);
 
-  if (studio.needsGate) return <StudioGate studio={studio} />;
+  if (studio.needsGate) {
+    return (
+      <>
+        <StudioGate studio={studio} />
+        <Dialogs studio={studio} />
+      </>
+    );
+  }
   if (studio.booting) {
     return <div className="boot"><div className="mark" /><p>{tx("Opening the studio…", "جارٍ فتح الاستوديو…")}</p></div>;
   }
@@ -95,6 +112,7 @@ function StudioShell() {
           <div className="form-actions">
             <button className="tb primary" onClick={() => studio.setModal({ type: "new" })}>{tx("New website", "موقع جديد")}</button>
             <button className="tb" onClick={() => studio.setModal({ type: "open" })}>{tx("Choose a folder", "اختر مجلدًا")}</button>
+            <button className="tb" onClick={() => studio.setModal({ type: "help" })}>{tx("Help", "تعليمات")}</button>
           </div>
           {studio.lessons.length > 0 && (
             <div className="lesson-list">
@@ -421,7 +439,8 @@ function EwMenus({ studio, setHand, place, inTable }: { studio: ReturnType<typeo
         <Item label={tx("Tag Properties", "خصائص الوسم")} onClick={() => run(() => setHand("edit"))} />
       </Drop>
       <Drop name="help" label={tx("Help", "تعليمات")} open={open} setOpen={setOpen} align="end">
-        <Item label={tx("How to edit a page", "كيف أحرر الصفحة")} onClick={() => run(() => studio.setToast(tx("Click the page to select a tag. Double-click words to type. Drag a tag from the Toolbox, or use the Insert menu.", "انقر الصفحة لتحديد وسم. انقر مرتين على الكلمات لتكتب. اسحب وسمًا من صندوق الأدوات، أو استخدم قائمة إدراج.")))} />
+        <Item label={tx("Web Studio Help", "دليل استوديو الويب")} keys="F1" onClick={() => run(() => studio.setModal({ type: "help" }))} />
+        <Item label={tx("How to edit a page", "كيف أحرر الصفحة")} onClick={() => run(() => studio.setModal({ type: "help", chapter: "editing" }))} />
       </Drop>
     </>
   );
