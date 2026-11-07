@@ -49,7 +49,16 @@ $env:VITE_BASE = "/webstudio/"
 npm run build
 ```
 
-On the server, the API listens on 127.0.0.1:8011 and nginx sends `https://nasserdiary.com/webstudio/` to it. Student websites stay in `/home/nasser/webstudio-data` and are not replaced when the code is updated.
+On the server, the API listens on 127.0.0.1:8011. Student websites stay in `/home/nasser/webstudio-data` and are not replaced when the code is updated.
+
+The first time the public address is connected, run this once and type the server password:
+
+```bash
+ssh nasser@76.13.243.173
+sudo bash /home/nasser/webstudio/deploy/enable-public-url.sh
+```
+
+After that, a new version is: commit, `git push`, then on the server `bash /home/nasser/webstudio/deploy/install-on-server.sh`.
 
 `npm run build` writes the interface to `frontend/dist`. If that folder exists, the API also serves it at http://localhost:8000.
 
