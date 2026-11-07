@@ -84,6 +84,7 @@ const ERRORS: Record<string, string> = {
   "You cannot turn off the account you are using.": "لا يمكنك إيقاف الحساب الذي تستخدمه الآن.",
   "Sign in as a coordinator or admin.": "سجّل الدخول كمنسق مقرر أو مدير.",
   "Only an admin can do that.": "هذا الإجراء للمدير فقط.",
+  "One of the welcome lines is too long.": "أحد أسطر نافذة الترحيب أطول من الحد المسموح.",
   "Give the lesson a title.": "اكتب عنوانًا للدرس.",
   "Language must be English, Arabic, or the student's choice.": "اللغة يجب أن تكون الإنجليزية أو العربية أو اختيار الطالب.",
   "Choose at least one mission.": "اختر مهمة واحدة على الأقل.",

@@ -47,7 +47,7 @@ from .classroom import (
     write_exam,
 )
 from .content import public_kits, public_templates, template_by_id
-from .db import AppState, Asset, Classroom, Project, Staff, get_db, init_db, now_ms
+from .db import AppState, Asset, Classroom, Project, Staff, WelcomeMessage, get_db, init_db, now_ms
 from .staff import (
     change_own_password,
     create_staff,
@@ -190,6 +190,18 @@ class StaffUpdate(BaseModel):
 class PasswordChange(BaseModel):
     current_password: str
     password: str
+
+
+class WelcomeWrite(BaseModel):
+    version: str = ""
+    title_en: str = ""
+    title_ar: str = ""
+    credit_en: str = ""
+    credit_ar: str = ""
+    line1_en: str = ""
+    line2_en: str = ""
+    line1_ar: str = ""
+    line2_ar: str = ""
 
 
 class LessonCreate(BaseModel):
@@ -727,6 +739,106 @@ def _admin(user: Staff | None) -> Staff:
     if user.role != "admin":
         raise HTTPException(status_code=403, detail="Only an admin can do that.")
     return user
+
+
+# Keep these words aligned with WELCOME_DEFAULTS in frontend/src/welcome.ts.
+WELCOME_DEFAULTS = {
+    "version": "Version 1.0",
+    "title_en": "Web Studio",
+    "title_ar": "استوديو الويب",
+    "credit_en": "Designed by Nasser Tabook",
+    "credit_ar": "تصميم ناصر طابوق",
+    "line1_en": "A classroom for learning how to build a real website.",
+    "line2_en": "Design the page, write the HTML, then check and save your work.",
+    "line1_ar": "صف لتعلّم كيف يُبنى موقع حقيقي.",
+    "line2_ar": "صمّم الصفحة، واكتب HTML، ثم افحص عملك واحفظه.",
+}
+_WELCOME_LIMITS = {
+    "version": 40,
+    "title_en": 80,
+    "title_ar": 80,
+    "credit_en": 160,
+    "credit_ar": 160,
+    "line1_en": 220,
+    "line2_en": 220,
+    "line1_ar": 220,
+    "line2_ar": 220,
+}
+_WELCOME_REQUIRED = {"version", "title_en", "title_ar"}
+
+
+def _welcome_line(value: str, key: str) -> str:
+    text = " ".join(value.replace("\n", " ").split())
+    if len(text) > _WELCOME_LIMITS[key]:
+        raise ValueError("One of the welcome lines is too long.")
+    if not text and key in _WELCOME_REQUIRED:
+        return WELCOME_DEFAULTS[key]
+    return text
+
+
+def _welcome_out(row: WelcomeMessage) -> dict[str, str]:
+    return {
+        "version": row.version_label,
+        "title_en": row.title_en,
+        "title_ar": row.title_ar,
+        "credit_en": row.credit_en,
+        "credit_ar": row.credit_ar,
+        "line1_en": row.line1_en,
+        "line2_en": row.line2_en,
+        "line1_ar": row.line1_ar,
+        "line2_ar": row.line2_ar,
+    }
+
+
+def _welcome_row(db: Session) -> WelcomeMessage:
+    row = db.get(WelcomeMessage, 1)
+    if row is not None:
+        return row
+    row = WelcomeMessage(
+        id=1,
+        version_label=WELCOME_DEFAULTS["version"],
+        title_en=WELCOME_DEFAULTS["title_en"],
+        title_ar=WELCOME_DEFAULTS["title_ar"],
+        credit_en=WELCOME_DEFAULTS["credit_en"],
+        credit_ar=WELCOME_DEFAULTS["credit_ar"],
+        line1_en=WELCOME_DEFAULTS["line1_en"],
+        line2_en=WELCOME_DEFAULTS["line2_en"],
+        line1_ar=WELCOME_DEFAULTS["line1_ar"],
+        line2_ar=WELCOME_DEFAULTS["line2_ar"],
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+def _apply_welcome(row: WelcomeMessage, body: WelcomeWrite) -> None:
+    row.version_label = _welcome_line(body.version, "version")
+    row.title_en = _welcome_line(body.title_en, "title_en")
+    row.title_ar = _welcome_line(body.title_ar, "title_ar")
+    row.credit_en = _welcome_line(body.credit_en, "credit_en")
+    row.credit_ar = _welcome_line(body.credit_ar, "credit_ar")
+    row.line1_en = _welcome_line(body.line1_en, "line1_en")
+    row.line2_en = _welcome_line(body.line2_en, "line2_en")
+    row.line1_ar = _welcome_line(body.line1_ar, "line1_ar")
+    row.line2_ar = _welcome_line(body.line2_ar, "line2_ar")
+
+
+@app.get("/api/welcome")
+def get_welcome(db: Session = Depends(get_db)):
+    return _welcome_out(_welcome_row(db))
+
+
+@app.put("/api/admin/welcome")
+def put_welcome(body: WelcomeWrite, db: Session = Depends(get_db), user: Staff | None = Depends(read_staff)):
+    _admin(user)
+    row = _welcome_row(db)
+    try:
+        _apply_welcome(row, body)
+    except ValueError as exc:
+        raise _class_error(exc) from exc
+    db.commit()
+    return _welcome_out(row)
 
 
 @app.get("/api/staff/status")

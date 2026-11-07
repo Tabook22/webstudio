@@ -198,6 +198,18 @@ export type StaffSession = {
   role: "admin" | "coordinator";
 };
 
+export type WelcomeCopy = {
+  version: string;
+  title_en: string;
+  title_ar: string;
+  credit_en: string;
+  credit_ar: string;
+  line1_en: string;
+  line2_en: string;
+  line1_ar: string;
+  line2_ar: string;
+};
+
 export type StaffAccount = {
   id: string;
   username: string;

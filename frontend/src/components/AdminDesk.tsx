@@ -2,7 +2,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import { api } from "../api";
 import { localizeError, useI18n } from "../i18n";
 import type { Studio } from "../studio";
-import type { StaffAccount } from "../types";
+import type { StaffAccount, WelcomeCopy } from "../types";
+import { WELCOME_DEFAULTS, readWelcome } from "../welcome";
 import { CourseSettings } from "./CourseSettings";
 
 export function AdminDialog({ studio }: { studio: Studio }) {
@@ -83,7 +84,7 @@ function AdminDesk({ studio }: { studio: Studio }) {
   const { tx, lang } = useI18n();
   const staff = studio.staff;
   const admin = staff?.role === "admin";
-  const [page, setPage] = useState<"accounts" | "courses">(admin ? "accounts" : "courses");
+  const [page, setPage] = useState<"accounts" | "courses" | "welcome">(admin ? "accounts" : "courses");
   const [current, setCurrent] = useState("");
   const [nextPassword, setNextPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -130,11 +131,13 @@ function AdminDesk({ studio }: { studio: Studio }) {
           <div className="seg" role="tablist">
             <button type="button" aria-selected={page === "accounts"} onClick={() => setPage("accounts")}>{tx("Accounts", "الحسابات")}</button>
             <button type="button" aria-selected={page === "courses"} onClick={() => setPage("courses")}>{tx("Courses", "المقررات")}</button>
+            <button type="button" aria-selected={page === "welcome"} onClick={() => setPage("welcome")}>{tx("Welcome", "الترحيب")}</button>
           </div>
         )}
         <button type="button" className="tb" onClick={studio.signOutStaff}>{tx("Sign out", "تسجيل الخروج")}</button>
       </div>
       {admin && page === "accounts" && <Accounts studio={studio} onStaff={studio.applyStaff} />}
+      {admin && page === "welcome" && <WelcomeEditor token={staff.token || ""} />}
       {(!admin || page === "courses") && <CourseSettings studio={studio} />}
       <form className="stack-form" onSubmit={(event) => void changePassword(event)}>
         <h3>{tx("Change your password", "غيّر كلمة مرورك")}</h3>
@@ -145,6 +148,78 @@ function AdminDesk({ studio }: { studio: Studio }) {
       {error && <p className="form-error">{error}</p>}
       {note && <p className="hint">{note}</p>}
     </div>
+  );
+}
+
+function WelcomeEditor({ token }: { token: string }) {
+  const { tx, lang } = useI18n();
+  const [form, setForm] = useState<WelcomeCopy>(WELCOME_DEFAULTS);
+  const [ready, setReady] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [note, setNote] = useState("");
+
+  useEffect(() => {
+    let gone = false;
+    api.welcome()
+      .then((copy) => {
+        if (!gone) setForm(readWelcome(copy));
+      })
+      .catch((err) => {
+        if (!gone) setError(localizeError(err instanceof Error ? err.message : "Request failed", lang));
+      })
+      .finally(() => {
+        if (!gone) setReady(true);
+      });
+    return () => { gone = true; };
+    // Load the saved words once. A language change should not wipe an unsaved edit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function setField(key: keyof WelcomeCopy, value: string) {
+    setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  async function save(event: { preventDefault(): void }, next = form) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    setNote("");
+    try {
+      const saved = await api.saveWelcome(token, next);
+      setForm(readWelcome(saved));
+      setNote(tx("Welcome window saved. Refresh the studio to see it.", "تم حفظ نافذة الترحيب. حدّث الصفحة لرؤيتها."));
+    } catch (err) {
+      setError(localizeError(err instanceof Error ? err.message : "Request failed", lang));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!ready) return <p className="hint">{tx("Loading the welcome window…", "جارٍ تحميل نافذة الترحيب…")}</p>;
+
+  return (
+    <form className="stack-form welcome-form" onSubmit={(event) => void save(event)}>
+      <h3>{tx("Welcome window", "نافذة الترحيب")}</h3>
+      <p className="hint">{tx("These boxes start with the words students see now. Change any line, then save. Leave a credit or purpose line empty to take it off the window. An empty name or version keeps the original words.", "هذه الخانات تبدأ بالنص الذي يراه الطلاب الآن. غيّر أي سطر ثم احفظ. اترك خانة التصميم أو الغرض فارغة لإزالتها من النافذة. الاسم أو الإصدار الفارغ يبقي النص الأصلي.")}</p>
+      <label>{tx("Version", "الإصدار")}<input dir="ltr" maxLength={40} value={form.version} onChange={(event) => setField("version", event.target.value)} /></label>
+      <div className="welcome-fields">
+        <label>{tx("Name in English", "الاسم بالإنجليزية")}<input dir="ltr" maxLength={80} value={form.title_en} onChange={(event) => setField("title_en", event.target.value)} /></label>
+        <label>{tx("Name in Arabic", "الاسم بالعربية")}<input dir="rtl" maxLength={80} value={form.title_ar} onChange={(event) => setField("title_ar", event.target.value)} /></label>
+        <label>{tx("Credit in English", "عبارة التصميم بالإنجليزية")}<input dir="ltr" maxLength={160} value={form.credit_en} onChange={(event) => setField("credit_en", event.target.value)} /></label>
+        <label>{tx("Credit in Arabic", "عبارة التصميم بالعربية")}<input dir="rtl" maxLength={160} value={form.credit_ar} onChange={(event) => setField("credit_ar", event.target.value)} /></label>
+        <label>{tx("Purpose in English, first line", "الغرض بالإنجليزية، السطر الأول")}<textarea dir="ltr" rows={2} maxLength={220} value={form.line1_en} onChange={(event) => setField("line1_en", event.target.value)} /></label>
+        <label>{tx("Purpose in Arabic, first line", "الغرض بالعربية، السطر الأول")}<textarea dir="rtl" rows={2} maxLength={220} value={form.line1_ar} onChange={(event) => setField("line1_ar", event.target.value)} /></label>
+        <label>{tx("Purpose in English, second line", "الغرض بالإنجليزية، السطر الثاني")}<textarea dir="ltr" rows={2} maxLength={220} value={form.line2_en} onChange={(event) => setField("line2_en", event.target.value)} /></label>
+        <label>{tx("Purpose in Arabic, second line", "الغرض بالعربية، السطر الثاني")}<textarea dir="rtl" rows={2} maxLength={220} value={form.line2_ar} onChange={(event) => setField("line2_ar", event.target.value)} /></label>
+      </div>
+      <div className="form-actions">
+        <button className="tb primary" type="submit" disabled={busy}>{tx("Save welcome window", "حفظ نافذة الترحيب")}</button>
+        <button className="tb" type="button" disabled={busy} onClick={(event) => { setForm(WELCOME_DEFAULTS); void save(event, WELCOME_DEFAULTS); }}>{tx("Restore the original words", "إعادة النص الأصلي")}</button>
+      </div>
+      {error && <p className="form-error">{error}</p>}
+      {note && <p className="hint">{note}</p>}
+    </form>
   );
 }
 

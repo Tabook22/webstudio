@@ -1,4 +1,4 @@
-import type { Asset, ClassHome, CourseRecord, Kit, Lesson, MissionState, Project, ProjectSummary, StaffAccount, TemplateInfo } from "./types";
+import type { Asset, ClassHome, CourseRecord, Kit, Lesson, MissionState, Project, ProjectSummary, StaffAccount, TemplateInfo, WelcomeCopy } from "./types";
 
 type ExamBody = { questions: string; questionsAr?: string; html: string };
 
@@ -129,6 +129,11 @@ export const api = {
     ),
   myExam: (token: string) =>
     fetch(apiUrl("/api/classes/exam"), { headers: headers(false, token) }).then((res) => read<{ exam: ExamBody | null }>(res)),
+  welcome: () => fetch(apiUrl("/api/welcome")).then((res) => read<WelcomeCopy>(res)),
+  saveWelcome: (token: string, body: WelcomeCopy) =>
+    fetch(apiUrl("/api/admin/welcome"), { method: "PUT", headers: headers(true, token), body: JSON.stringify(body) }).then((res) =>
+      read<WelcomeCopy>(res),
+    ),
   staffStatus: () => fetch(apiUrl("/api/staff/status")).then((res) => read<{ needs_setup: boolean }>(res)),
   staffSetup: (body: { username: string; password: string; display_name: string }) =>
     fetch(apiUrl("/api/staff/setup"), { method: "POST", headers: headers(true, null), body: JSON.stringify(body) }).then((res) => read<StaffAccount>(res)),

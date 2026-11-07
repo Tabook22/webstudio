@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { api } from "../api";
 import { MISSIONS } from "../editor/learn";
 import { LangSwitch, localizeError, useI18n } from "../i18n";
 import type { Studio } from "../studio";
-import type { ClassHome, Lesson } from "../types";
+import type { ClassHome, Lesson, WelcomeCopy } from "../types";
+import { WELCOME_DEFAULTS, readWelcome } from "../welcome";
 import { StaffSignIn } from "./AdminDesk";
 
 export function StudioGate({ studio }: { studio: Studio }) {
@@ -32,6 +34,30 @@ export function StudioGate({ studio }: { studio: Studio }) {
 
 function WelcomeSplash({ onContinue }: { onContinue: () => void }) {
   const { tx } = useI18n();
+  const [copy, setCopy] = useState<WelcomeCopy | null>(null);
+
+  useEffect(() => {
+    let gone = false;
+    const timer = window.setTimeout(() => {
+      if (!gone) setCopy((current) => current || WELCOME_DEFAULTS);
+    }, 1500);
+    api.welcome()
+      .then((next) => {
+        if (!gone) setCopy(readWelcome(next));
+      })
+      .catch(() => {
+        if (!gone) setCopy(WELCOME_DEFAULTS);
+      });
+    return () => {
+      gone = true;
+      window.clearTimeout(timer);
+    };
+  }, []);
+
+  const text = copy || WELCOME_DEFAULTS;
+  const englishPurpose = [text.line1_en, text.line2_en].filter(Boolean);
+  const arabicPurpose = [text.line1_ar, text.line2_ar].filter(Boolean);
+
   return (
     <div className="splash-back">
       <div className="splash" role="dialog" aria-modal="true" aria-labelledby="splash-title">
@@ -39,18 +65,22 @@ function WelcomeSplash({ onContinue }: { onContinue: () => void }) {
           <span className="mark" aria-hidden="true" />
           <LangSwitch />
         </div>
-        <p className="splash-version" dir="ltr">Version 1.0</p>
-        <h1 id="splash-title" dir="ltr">Web Studio</h1>
-        <p className="splash-name" dir="rtl">استوديو الويب</p>
-        <p className="splash-by" dir="ltr">Designed by Nasser Tabook</p>
-        <p className="splash-by" dir="rtl">تصميم ناصر طابوق</p>
-        <div className="splash-purpose" dir="ltr">
-          <p>A classroom for learning how to build a real website.</p>
-          <p>Design the page, write the HTML, then check and save your work.</p>
-        </div>
-        <div className="splash-purpose" dir="rtl">
-          <p>صف لتعلّم كيف يُبنى موقع حقيقي.</p>
-          <p>صمّم الصفحة، واكتب HTML، ثم افحص عملك واحفظه.</p>
+        <div className={copy ? undefined : "splash-pending"}>
+          {text.version && <p className="splash-version" dir="ltr">{text.version}</p>}
+          <h1 id="splash-title" dir="ltr">{text.title_en}</h1>
+          {text.title_ar && <p className="splash-name" dir="rtl">{text.title_ar}</p>}
+          {text.credit_en && <p className="splash-by" dir="ltr">{text.credit_en}</p>}
+          {text.credit_ar && <p className="splash-by" dir="rtl">{text.credit_ar}</p>}
+          {englishPurpose.length > 0 && (
+            <div className="splash-purpose" dir="ltr">
+              {englishPurpose.map((line, index) => <p key={index}>{line}</p>)}
+            </div>
+          )}
+          {arabicPurpose.length > 0 && (
+            <div className="splash-purpose" dir="rtl">
+              {arabicPurpose.map((line, index) => <p key={index}>{line}</p>)}
+            </div>
+          )}
         </div>
         <button type="button" className="tb primary" autoFocus onClick={onContinue}>{tx("Continue", "متابعة")}</button>
       </div>

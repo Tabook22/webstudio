@@ -131,6 +131,23 @@ class Learner(Base):
     created_at: Mapped[int] = mapped_column(BigInteger, default=now_ms)
 
 
+class WelcomeMessage(Base):
+    """The words on the welcome window. One row, edited by an admin."""
+
+    __tablename__ = "welcome_message"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    version_label: Mapped[str] = mapped_column(String(40), default="Version 1.0")
+    title_en: Mapped[str] = mapped_column(String(80), default="Web Studio")
+    title_ar: Mapped[str] = mapped_column(String(80), default="استوديو الويب")
+    credit_en: Mapped[str] = mapped_column(String(160), default="Designed by Nasser Tabook")
+    credit_ar: Mapped[str] = mapped_column(String(160), default="تصميم ناصر طابوق")
+    line1_en: Mapped[str] = mapped_column(String(220), default="A classroom for learning how to build a real website.")
+    line2_en: Mapped[str] = mapped_column(String(220), default="Design the page, write the HTML, then check and save your work.")
+    line1_ar: Mapped[str] = mapped_column(String(220), default="صف لتعلّم كيف يُبنى موقع حقيقي.")
+    line2_ar: Mapped[str] = mapped_column(String(220), default="صمّم الصفحة، واكتب HTML، ثم افحص عملك واحفظه.")
+
+
 class Staff(Base):
     """A coordinator or admin. Course settings require one of these accounts."""
 
