@@ -1,0 +1,13 @@
+[Unit]
+Description=Web Studio
+After=network.target
+
+[Service]
+User=nasser
+WorkingDirectory=/home/nasser/webstudio/backend
+Environment=WEBSTUDIO_DATA=/home/nasser/webstudio-data
+ExecStart=/home/nasser/webstudio/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8011
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
