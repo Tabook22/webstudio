@@ -111,8 +111,8 @@ export function ClassDialog({ studio }: { studio: Studio }) {
 function ClassForms({ studio, gate }: { studio: Studio; gate?: boolean }) {
   const { tx, lang } = useI18n();
   const [who, setWho] = useState<"student" | "teacher" | "staff">("student");
-  const [code, setCode] = useState("");
-  const [section, setSection] = useState("1");
+  const [courses, setCourses] = useState<{ id: string; name: string; course_code: string; section: string }[]>([]);
+  const [courseId, setCourseId] = useState("");
   const [name, setName] = useState("");
   const [studentId, setStudentId] = useState("");
   const [pin, setPin] = useState("");
@@ -121,6 +121,20 @@ function ClassForms({ studio, gate }: { studio: Studio; gate?: boolean }) {
   const [openPin, setOpenPin] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    let gone = false;
+    api.courseChoices()
+      .then((list) => {
+        if (!gone) setCourses(list);
+      })
+      .catch(() => {
+        if (!gone) setCourses([]);
+      });
+    return () => {
+      gone = true;
+    };
+  }, []);
 
   async function run(task: () => Promise<void>) {
     setBusy(true);
@@ -146,15 +160,28 @@ function ClassForms({ studio, gate }: { studio: Studio; gate?: boolean }) {
           event.preventDefault();
           const data = new FormData(event.currentTarget);
           const text = (key: string) => String(data.get(key) || "");
-          void run(() => studio.joinClass(text("course_code"), text("section"), text("name"), text("pin"), text("student_id")));
+          const picked = courses.find((item) => item.id === text("course_id"));
+          if (!picked) {
+            setError(localizeError(courses.length ? "Choose your course." : "No course is open yet. Ask your lecturer.", lang));
+            return;
+          }
+          void run(() => studio.joinClass(picked.course_code, picked.section, text("name"), text("pin"), text("student_id")));
         }}>
-          <p className="hint">{tx("Enter your student ID, your name, the course code, your section, and the PIN for that section. Section 1 and section 2 stay separate even when the title and the code are the same.", "أدخل رقمك الجامعي واسمك ورمز المقرر وشعبتك والرقم السري لتلك الشعبة. الشعبة 1 والشعبة 2 منفصلتان حتى عندما يتطابق العنوان والرمز.")}</p>
+          <p className="hint">{tx("Choose your course from the list, then enter your student ID, your name, and the PIN for that section. Each section is listed on its own, even when the title and the code are the same.", "اختر مقررك من القائمة، ثم أدخل رقمك الجامعي واسمك والرقم السري لتلك الشعبة. كل شعبة تظهر وحدها، حتى عندما يتطابق العنوان والرمز.")}</p>
+          <label>{tx("Your course", "مقررك")}
+            <select name="course_id" dir="ltr" value={courseId} onChange={(event) => setCourseId(event.target.value)}>
+              <option value="">{courses.length ? tx("Choose your course", "اختر مقررك") : tx("No course is open yet", "لا يوجد مقرر مفتوح بعد")}</option>
+              {courses.map((course) => (
+                <option key={course.id} value={course.id}>
+                  {`${course.course_code} · ${tx("Section", "الشعبة")} ${course.section} — ${course.name}`}
+                </option>
+              ))}
+            </select>
+          </label>
           <label>{tx("Student ID", "الرقم الجامعي")}<input name="student_id" dir="ltr" value={studentId} onChange={(event) => setStudentId(event.target.value.toUpperCase())} autoComplete="off" /></label>
           <label>{tx("Your name", "اسمك")}<input name="name" value={name} onChange={(event) => setName(event.target.value)} dir="auto" autoComplete="name" /></label>
-          <label>{tx("Course code", "رمز المقرر")}<input name="course_code" dir="ltr" value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} placeholder="CMPS100A" autoComplete="off" /></label>
-          <label>{tx("Section", "الشعبة")}<input name="section" dir="ltr" inputMode="numeric" value={section} onChange={(event) => setSection(event.target.value)} /></label>
           <label>{tx("PIN from your instructor", "الرقم السري من المحاضر")}<input name="pin" dir="ltr" inputMode="numeric" type="password" value={pin} onChange={(event) => setPin(event.target.value)} autoComplete="off" /></label>
-          <button className="tb primary" type="submit" disabled={busy}>{tx("Enter class", "ادخل إلى الصف")}</button>
+          <button className="tb primary" type="submit" disabled={busy}>{tx("Start learning HTML", "ابدأ تعلّم HTML")}</button>
         </form>
       ) : who === "teacher" ? (
         <form className="stack-form" onSubmit={(event) => {
