@@ -38,7 +38,7 @@ export const CHAPTERS: Chapter[] = [
     lead: ["A map of Web Studio: every menu, every panel, and a short example for each tool.", "خريطة استوديو الويب: كل قائمة، وكل لوحة، ومثال قصير لكل أداة."],
     blocks: [
       p("Open this guide from Help → Web Studio Help, or press F1. The same guide is on the welcome page, before you sign in.", "افتح هذا الدليل من تعليمات ← دليل استوديو الويب، أو اضغط F1. الدليل نفسه موجود في صفحة الترحيب قبل تسجيل الدخول."),
-      p("The index on the side is grouped. Search looks through titles, tool names, and the words in each chapter. Choose a language with the EN / عر control. The guide follows that choice.", "الفهرس على الجانب مقسّم إلى مجموعات. البحث يمر على العناوين وأسماء الأدوات وكلمات كل فصل. اختر اللغة من EN / عر. الدليل يتبع هذا الاختيار."),
+      p("Every chapter is written in English and in Arabic, one under the other. English and العربية at the top choose which language comes first, and which language the pictures use. Search looks through both languages.", "كل فصل مكتوب بالإنجليزية وبالعربية، واحد تحت الآخر. English والعربية في الأعلى يختاران أي لغة تأتي أولًا، وأي لغة تستخدمها الصور. البحث يمر على اللغتين."),
       fig("window", "The studio window, with the six places this guide keeps returning to.", "نافذة الاستوديو، وفيها الأماكن الستة التي يعود إليها هذا الدليل."),
       h("What a chapter contains", "ماذا يحتوي كل فصل"),
       p("A chapter names the tool, says where it lives in the window, explains what it changes, and then gives an example you can follow on a practice page. Menu names are written the way they appear on screen.", "يسمّي الفصل الأداة، ويذكر مكانها في النافذة، ويشرح ما الذي تغيّره، ثم يعطي مثالًا يمكنك اتباعه في صفحة تدريب. أسماء القوائم مكتوبة كما تظهر على الشاشة."),

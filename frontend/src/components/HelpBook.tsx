@@ -3,14 +3,14 @@ import { CHAPTERS, chapterText, type Chapter, type FigId, type HelpBlock } from 
 import { useI18n } from "../i18n";
 
 export function HelpBook({ onClose, chapter }: { onClose: () => void; chapter?: string }) {
-  const { tx, lang } = useI18n();
+  const { tx, lang, setLang } = useI18n();
   const index = lang === "ar" ? 1 : 0;
   const [current, setCurrent] = useState(chapter && CHAPTERS.some((item) => item.id === chapter) ? chapter : CHAPTERS[0].id);
   const [query, setQuery] = useState("");
   const needle = query.trim().toLowerCase();
   const matches = useMemo(
-    () => CHAPTERS.filter((item) => !needle || chapterText(item, index).toLowerCase().includes(needle)),
-    [needle, index],
+    () => CHAPTERS.filter((item) => !needle || `${chapterText(item, 0)}\n${chapterText(item, 1)}`.toLowerCase().includes(needle)),
+    [needle],
   );
   const shown = matches.find((item) => item.id === current) || matches[0] || CHAPTERS[0];
   const groups = matches.reduce<{ name: string; items: Chapter[] }[]>((list, item) => {
@@ -37,18 +37,26 @@ export function HelpBook({ onClose, chapter }: { onClose: () => void; chapter?: 
             <strong>{tx("Web Studio Help", "دليل استوديو الويب")}</strong>
             <button type="button" className="icon-btn" onClick={onClose} aria-label={tx("Close", "إغلاق")}>×</button>
           </header>
+          <div className="help-lang" role="group" aria-label={tx("Guide language", "لغة الدليل")}>
+            <button type="button" aria-pressed={lang === "en"} onClick={() => setLang("en")}>English</button>
+            <button type="button" aria-pressed={lang === "ar"} onClick={() => setLang("ar")}>العربية</button>
+          </div>
           <label className="help-search">
             <span className="sr">{tx("Search the guide", "ابحث في الدليل")}</span>
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tx("Search tools and topics", "ابحث عن أداة أو موضوع")} />
+            <input dir={lang === "ar" ? "rtl" : "ltr"} value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tx("Search tools and topics", "ابحث عن أداة أو موضوع")} />
           </label>
           <nav aria-label={tx("Guide index", "فهرس الدليل")}>
             {groups.length === 0 && <p className="hint">{tx("Nothing in the guide matches that.", "لا شيء في الدليل يطابق هذا.")}</p>}
             {groups.map((group) => (
               <section key={group.name}>
-                <h2>{group.name}</h2>
+                <h2>
+                  <span>{group.items[0].group[index]}</span>
+                  {group.items[0].group[0] !== group.items[0].group[1] && <small dir={index === 0 ? "rtl" : "ltr"}>{group.items[0].group[index === 0 ? 1 : 0]}</small>}
+                </h2>
                 {group.items.map((item) => (
                   <button key={item.id} type="button" aria-current={item.id === shown.id ? "page" : undefined} onClick={() => setCurrent(item.id)}>
-                    {item.title[index]}
+                    <span>{item.title[index]}</span>
+                    {item.title[0] !== item.title[1] && <small dir={index === 0 ? "rtl" : "ltr"}>{item.title[index === 0 ? 1 : 0]}</small>}
                   </button>
                 ))}
               </section>
@@ -56,26 +64,40 @@ export function HelpBook({ onClose, chapter }: { onClose: () => void; chapter?: 
           </nav>
         </aside>
         <article className="help-read" key={shown.id}>
-          <p className="help-kicker">{shown.group[index]}</p>
-          <h1>{shown.title[index]}</h1>
-          <p className="help-lead">{shown.lead[index]}</p>
-          {shown.blocks.map((block, at) => <Block key={at} block={block} index={index} />)}
+          <Both t={shown.group} kind="kicker" />
+          <Both t={shown.title} kind="h1" />
+          <Both t={shown.lead} kind="lead" />
+          {shown.blocks.map((block, at) => <Block key={at} block={block} />)}
         </article>
       </div>
     </div>
   );
 }
 
-function Block({ block, index }: { block: HelpBlock; index: 0 | 1 }) {
-  const { tx } = useI18n();
-  if (block.k === "p") return <p>{block.t[index]}</p>;
-  if (block.k === "h") return <h2>{block.t[index]}</h2>;
-  if (block.k === "note") return <p className="help-note">{block.t[index]}</p>;
+function Both({ t, kind }: { t: [string, string]; kind?: "p" | "h1" | "h2" | "h3" | "lead" | "kicker" | "where" }) {
+  const { lang } = useI18n();
+  const primary = lang === "ar" ? 1 : 0;
+  const other = primary === 0 ? 1 : 0;
+  const same = t[0].trim() === t[1].trim();
+  const Tag = kind === "h1" ? "h1" : kind === "h2" ? "h2" : kind === "h3" ? "h3" : "p";
+  const primaryClass = kind === "lead" ? "help-lead" : kind === "kicker" ? "help-kicker" : kind === "where" ? "help-where" : undefined;
+  return (
+    <div className="help-both">
+      <Tag dir={primary === 1 ? "rtl" : "ltr"} className={primaryClass}>{t[primary]}</Tag>
+      {!same && <p className="help-alt" dir={other === 1 ? "rtl" : "ltr"}>{t[other]}</p>}
+    </div>
+  );
+}
+
+function Block({ block }: { block: HelpBlock }) {
+  if (block.k === "p") return <Both t={block.t} />;
+  if (block.k === "h") return <Both t={block.t} kind="h2" />;
+  if (block.k === "note") return <div className="help-note"><Both t={block.t} /></div>;
   if (block.k === "code") return <pre className="help-code" dir="ltr">{block.text}</pre>;
   if (block.k === "steps") {
     return (
       <ol className="help-steps">
-        {block.items.map((item) => <li key={item[index]}>{item[index]}</li>)}
+        {block.items.map((item) => <li key={item[0]}><Both t={item} /></li>)}
       </ol>
     );
   }
@@ -83,18 +105,18 @@ function Block({ block, index }: { block: HelpBlock; index: 0 | 1 }) {
     return (
       <figure className="help-figure">
         <Figure id={block.id} />
-        <figcaption>{block.cap[index]}</figcaption>
+        <figcaption><Both t={block.cap} /></figcaption>
       </figure>
     );
   }
   return (
     <div className="help-tools">
       {block.items.map((item) => (
-        <section key={item.name[index]}>
-          <h3>{item.name[index]}</h3>
-          <p className="help-where">{item.where[index]}</p>
-          <p>{item.what[index]}</p>
-          <p className="help-ex"><b>{tx("Example", "مثال")}</b> {item.ex[index]}</p>
+        <section key={item.name[0]}>
+          <Both t={item.name} kind="h3" />
+          <Both t={item.where} kind="where" />
+          <Both t={item.what} />
+          <div className="help-ex"><Both t={[`Example. ${item.ex[0]}`, `مثال. ${item.ex[1]}`]} /></div>
         </section>
       ))}
     </div>
@@ -130,9 +152,9 @@ function WindowFig({ tx }: { tx: Tx }) {
   return (
     <Plate>
       <rect x="18" y="16" width="684" height="28" rx="4" fill="#e7e7e7" />
-      <text x="32" y="35" fill="#333" fontSize="12" fontFamily="Segoe UI, Tahoma, sans-serif">{tx("File   Edit   View   Insert   Format   Tools   Table   Site   Panels   Help", "ملف   تحرير   عرض   إدراج   تنسيق   أدوات   جدول   موقع   لوحات   تعليمات")}</text>
+      <text x="32" y="35" fill="#333" fontSize="12" fontFamily="Segoe UI, Tahoma, sans-serif">{tx("File    Edit    View    Insert    Help", "ملف    تحرير    عرض    إدراج    تعليمات")}</text>
       <rect x="18" y="50" width="684" height="32" fill="#f7f7f7" stroke="#ddd" />
-      <text x="32" y="71" fill="#444" fontSize="12" fontFamily="Segoe UI, Tahoma, sans-serif">{tx("New   Open   Save   Page    Undo  Redo    Preview   Download   Visual Aids   Check   Learn HTML", "جديد   فتح   حفظ   الصفحة    تراجع  إعادة    معاينة   تنزيل   مساعدات مرئية   فحص   تعلّم HTML")}</text>
+      <text x="32" y="71" fill="#444" fontSize="12" fontFamily="Segoe UI, Tahoma, sans-serif">{tx("New    Open    Save    Preview", "جديد    فتح    حفظ    معاينة")}</text>
       <rect x="18" y="92" width="168" height="188" rx="4" fill="#fff" stroke="#d5d5d5" />
       <text x="30" y="114" fill="#666" fontSize="12" fontFamily="Segoe UI, Tahoma, sans-serif">{tx("Folder List", "قائمة المجلدات")}</text>
       <text x="30" y="140" fill="#1c1917" fontSize="13" fontFamily="Segoe UI, Tahoma, sans-serif">index.html</text>

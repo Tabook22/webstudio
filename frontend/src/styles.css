@@ -1085,6 +1085,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   padding: 12px 12px 8px;
 }
 .help-index > header strong { font-size: 15px; }
+.help-lang { display: flex; gap: 6px; padding: 0 12px 8px; }
+.help-lang button {
+  flex: 1; padding: 6px 8px; border: 1px solid #cfcfcf; border-radius: 6px;
+  background: #fff; color: #1c1917; font: inherit; font-size: 13px;
+}
+.help-lang button[aria-pressed="true"] { background: #1a6fb5; border-color: #1a6fb5; color: #fff; }
 .help-search { display: block; padding: 0 12px 8px; }
 .help-search input {
   width: 100%; box-sizing: border-box; padding: 7px 10px;
@@ -1096,6 +1102,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   margin: 8px 8px 4px; font-size: 11px; letter-spacing: 0.04em;
   text-transform: uppercase; color: #6b6b6b; font-weight: 700;
 }
+.help-index h2 small, .help-index nav button small {
+  display: block; margin-top: 1px; color: #6b6b6b; font-size: 11px; font-weight: 500;
+  letter-spacing: 0; text-transform: none;
+}
 .help-index nav button {
   display: block; width: 100%; text-align: start; padding: 6px 8px; margin: 0;
   border: 0; border-radius: 6px; background: transparent; color: #1c1917; font: inherit; font-size: 13.5px;
@@ -1105,10 +1115,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .help-index nav button[aria-current="page"]:hover { background: #d7e8f8; }
 .help-read { overflow: auto; padding: 28px 36px 48px; background: #fff; }
 .help-kicker { margin: 0 0 6px; color: #1a6fb5; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
-.help-read h1 { margin: 0 0 8px; font-size: 28px; line-height: 1.25; }
-.help-lead { margin: 0 0 18px; font-size: 17px; line-height: 1.5; color: #444; }
-.help-read h2 { margin: 26px 0 8px; font-size: 18px; }
-.help-read p { margin: 0 0 12px; font-size: 15px; line-height: 1.6; }
+.help-read h1 { margin: 0; font-size: 28px; line-height: 1.25; }
+.help-lead { margin: 0; font-size: 17px; line-height: 1.5; color: #444; }
+.help-read h2 { margin: 0; font-size: 18px; }
+.help-read p { margin: 0; font-size: 15px; line-height: 1.6; }
+.help-both { margin: 0 0 14px; }
+.help-both h2 { margin-top: 12px; }
+.help-alt { margin-top: 4px !important; color: #57534e; font-size: 14.5px; line-height: 1.65; }
+.help-kicker.help-alt, .help-both .help-kicker + .help-alt { text-transform: none; letter-spacing: 0; font-size: 13px; }
 .help-note {
   padding: 12px 14px; background: #fff8e8; border: 1px solid #ead7a2; border-radius: 8px;
 }
@@ -1116,7 +1130,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .help-steps li { margin: 0 0 8px; line-height: 1.55; }
 .help-figure { margin: 8px 0 18px; }
 .help-figure figcaption { margin-top: 8px; color: #666; font-size: 13px; line-height: 1.45; }
-.hb-fig { width: 100%; height: auto; display: block; border: 1px solid #e4e4e4; border-radius: 10px; background: #f3f3f3; }
+.hb-fig { width: 100%; height: auto; display: block; direction: ltr; border: 1px solid #e4e4e4; border-radius: 10px; background: #f3f3f3; }
 .help-tools { display: grid; gap: 10px; margin: 8px 0 16px; }
 .help-tools section {
   padding: 12px 14px; border: 1px solid #e6e6e6; border-radius: 8px; background: #fafafa;
