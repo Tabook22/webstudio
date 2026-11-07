@@ -23,7 +23,7 @@ export function CourseSettings({ studio }: { studio: Studio }) {
   function fill(course: CourseRecord | null) {
     setSelected(course?.id || "");
     setForm(course
-      ? { name: course.name, course_code: course.course_code, section: course.section, pin: "" }
+      ? { name: course.name, course_code: course.course_code, section: course.section, pin: course.pin || "" }
       : empty);
     setNote("");
     setError("");
@@ -40,7 +40,7 @@ export function CourseSettings({ studio }: { studio: Studio }) {
       return list;
     }
     setSelected(course.id);
-    setForm({ name: course.name, course_code: course.course_code, section: course.section, pin: "" });
+    setForm({ name: course.name, course_code: course.course_code, section: course.section, pin: course.pin || "" });
     const paper = await api.courseExam(token, course.id);
     setQuestions(paper.exam?.questions || "");
     setQuestionsAr(paper.exam?.questionsAr || "");
@@ -107,15 +107,25 @@ export function CourseSettings({ studio }: { studio: Studio }) {
     return { code, section, open, adding };
   }
 
-  async function saveCourse(event: FormEvent) {
+  async function saveCourse(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!token) return;
-    const { adding } = draft();
+    const data = new FormData(event.currentTarget);
+    const body = {
+      name: String(data.get("name") || ""),
+      course_code: String(data.get("course_code") || ""),
+      section: String(data.get("section") || ""),
+      pin: String(data.get("pin") || ""),
+    };
+    const code = body.course_code.trim().toUpperCase();
+    const section = String(Number.parseInt(body.section, 10) || body.section.trim());
+    const open = courses.find((item) => item.id === selected) || null;
+    const adding = !open || (open.course_code === code && open.section !== section);
     setBusy(true);
     setError("");
     setNote("");
     try {
-      const saved = await api.saveCourse(token, form, adding ? undefined : selected);
+      const saved = await api.saveCourse(token, body, adding ? undefined : selected);
       await load(saved.id);
       setNote(adding
         ? tx("Section added. Students use this course code, this section, and this PIN.", "تمت إضافة الشعبة. يستخدم الطلاب رمز المقرر وهذه الشعبة وهذا الرقم السري.")
@@ -207,12 +217,14 @@ export function CourseSettings({ studio }: { studio: Studio }) {
           <p className="hint">{tx("The same title and the same course code can be used for many sections. Each section has its own PIN, its own students, and its own exam. A different title or a different code is a different course.", "العنوان نفسه ورمز المقرر نفسه يمكن استخدامهما لعدة شعب. لكل شعبة رقمها السري وطلابها واختبارها. العنوان المختلف أو الرمز المختلف مقرر مختلف.")}</p>
           {sameCode.length > 0 && <p className="hint" dir="ltr">{typedCode} · {sameCode.map((item) => item.section).join(", ")}</p>}
           {adding && current && <p className="hint">{tx("This adds a new section. The section you selected stays as it is.", "هذا يضيف شعبة جديدة. الشعبة التي حددتها تبقى كما هي.")}</p>}
-          <label>{tx("Course title", "عنوان المقرر")}<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} dir="auto" /></label>
+          <label>{tx("Course title", "عنوان المقرر")}<input name="name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} dir="auto" /></label>
           <div className="form-row">
-            <label>{tx("Course code", "رمز المقرر")}<input dir="ltr" value={form.course_code} onChange={(event) => setForm({ ...form, course_code: event.target.value.toUpperCase() })} placeholder="CMPS100A" /></label>
-            <label>{tx("Section", "الشعبة")}<input dir="ltr" inputMode="numeric" value={form.section} onChange={(event) => setForm({ ...form, section: event.target.value })} /></label>
+            <label>{tx("Course code", "رمز المقرر")}<input name="course_code" dir="ltr" value={form.course_code} onChange={(event) => setForm({ ...form, course_code: event.target.value.toUpperCase() })} placeholder="CMPS100A" /></label>
+            <label>{tx("Section", "الشعبة")}<input name="section" dir="ltr" inputMode="numeric" value={form.section} onChange={(event) => setForm({ ...form, section: event.target.value })} /></label>
           </div>
-          <label>{tx(adding ? "PIN for this section" : "New PIN, or leave blank to keep it", adding ? "الرقم السري لهذه الشعبة" : "رقم سري جديد، أو اتركه فارغًا للإبقاء عليه")}<input dir="ltr" inputMode="numeric" type="password" value={form.pin} onChange={(event) => setForm({ ...form, pin: event.target.value })} autoComplete="new-password" /></label>
+          <label>{tx(adding ? "PIN for this section" : "Section PIN", adding ? "الرقم السري لهذه الشعبة" : "الرقم السري للشعبة")}<input name="pin" dir="ltr" inputMode="numeric" value={form.pin} onChange={(event) => setForm({ ...form, pin: event.target.value })} autoComplete="off" /></label>
+          {!adding && current && !current.pin && <p className="hint">{tx("This section was saved before its PIN could be shown. Type the PIN and save, and it will stay in this box.", "حُفظت هذه الشعبة قبل أن يظهر رقمها السري. اكتب الرقم واحفظه، وسيبقى في هذا المربع.")}</p>}
+          {!adding && current?.pin && <p className="hint">{tx("Students and the lecturer type these digits. Change them and save to replace the PIN. Clear the box and save to keep it.", "يكتب الطلاب والمحاضر هذه الأرقام. غيّرها واحفظ لاستبدال الرقم السري. امسح المربع واحفظ للإبقاء عليه.")}</p>}
           <div className="form-actions">
             <button className="tb primary" type="submit" disabled={busy}>{adding ? tx("Add this section", "أضف هذه الشعبة") : tx("Save this section", "احفظ هذه الشعبة")}</button>
             {selected && <button className="tb" type="button" disabled={busy} onClick={() => { const course = courses.find((item) => item.id === selected); if (course) studio.openSection(course); }}>{tx("Open this section", "افتح هذه الشعبة")}</button>}

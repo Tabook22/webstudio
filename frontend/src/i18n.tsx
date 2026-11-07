@@ -65,6 +65,8 @@ const ERRORS: Record<string, string> = {
   "That course code, section, or PIN is not right.": "رمز المقرر أو الشعبة أو الرقم السري غير صحيح.",
   "Type your name so the lecturer can see it.": "اكتب اسمك ليراه المحاضر.",
   "Type the course code.": "اكتب رمز المقرر.",
+  "Choose your course.": "اختر مقررك.",
+  "No course is open yet. Ask your lecturer.": "لا يوجد مقرر مفتوح بعد. اسأل المحاضر.",
   "Type the section number.": "اكتب رقم الشعبة.",
   "Type your student ID.": "اكتب رقمك الجامعي.",
   "Fill in every box, then press Enter class.": "املأ كل الخانات، ثم اضغط ادخل إلى الصف.",

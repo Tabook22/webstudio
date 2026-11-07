@@ -102,8 +102,18 @@ def class_out(room: Classroom) -> dict:
     }
 
 
-def course_admin(room: Classroom) -> dict:
-    return {**class_out(room), "has_exam": read_exam(room) is not None, "teacher_token": room.teacher_token}
+def course_choice(room: Classroom) -> dict:
+    """Public course list for the student menu. Never includes the PIN."""
+    info = class_out(room)
+    info.pop("join_code", None)
+    return info
+
+
+def course_admin(room: Classroom, *, include_pin: bool = False) -> dict:
+    data = {**class_out(room), "has_exam": read_exam(room) is not None, "teacher_token": room.teacher_token}
+    if include_pin:
+        data["pin"] = room.pin or ""
+    return data
 
 
 def lesson_out(lesson: Lesson) -> dict:
@@ -160,13 +170,15 @@ def create_class(db: Session, name: str, course_code: str, section: str, pin: st
     code = _clean_code(course_code)
     number = _clean_section(section)
     _ensure_free(db, code, number)
+    clean_pin = _clean_pin(pin)
     room = Classroom(
         id=new_id(),
         name=name,
         join_code=_code(db),
         course_code=code,
         section=number,
-        pin_hash=hash_pin(_clean_pin(pin)),
+        pin_hash=hash_pin(clean_pin),
+        pin=clean_pin,
         teacher_token=secrets.token_urlsafe(24),
         exam_json="",
         created_at=now_ms(),
@@ -185,7 +197,9 @@ def update_class(db: Session, room: Classroom, name: str, course_code: str, sect
     room.course_code = code
     room.section = number
     if pin.strip():
-        room.pin_hash = hash_pin(_clean_pin(pin))
+        clean_pin = _clean_pin(pin)
+        room.pin_hash = hash_pin(clean_pin)
+        room.pin = clean_pin
     db.flush()
     return room
 

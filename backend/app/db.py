@@ -115,6 +115,7 @@ class Classroom(Base):
     course_code: Mapped[str] = mapped_column(String(16), default="", index=True)
     section: Mapped[str] = mapped_column(String(8), default="1")
     pin_hash: Mapped[str] = mapped_column(String(120))
+    pin: Mapped[str] = mapped_column(String(8), default="")
     teacher_token: Mapped[str] = mapped_column(String(80), unique=True)
     exam_json: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[int] = mapped_column(BigInteger, default=now_ms)
@@ -216,11 +217,14 @@ def init_db() -> None:
             connection.exec_driver_sql("ALTER TABLE classrooms ADD COLUMN section VARCHAR(8) DEFAULT '1'")
         if "exam_json" not in room_cols:
             connection.exec_driver_sql("ALTER TABLE classrooms ADD COLUMN exam_json TEXT DEFAULT ''")
+        if "pin" not in room_cols:
+            connection.exec_driver_sql("ALTER TABLE classrooms ADD COLUMN pin VARCHAR(8) DEFAULT ''")
         connection.exec_driver_sql(
             "UPDATE classrooms SET course_code = join_code WHERE course_code IS NULL OR course_code = ''"
         )
         connection.exec_driver_sql("UPDATE classrooms SET section = '1' WHERE section IS NULL OR section = ''")
         connection.exec_driver_sql("UPDATE classrooms SET exam_json = '' WHERE exam_json IS NULL")
+        connection.exec_driver_sql("UPDATE classrooms SET pin = '' WHERE pin IS NULL")
         connection.exec_driver_sql(
             "CREATE UNIQUE INDEX IF NOT EXISTS uq_course_section ON classrooms(course_code, section)"
         )

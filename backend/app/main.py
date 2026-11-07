@@ -29,6 +29,7 @@ from .classroom import (
     claim_device,
     class_out,
     course_admin,
+    course_choice,
     create_class,
     create_lesson,
     delete_course,
@@ -924,6 +925,11 @@ def staff_update_account(
     return staff_out(account)
 
 
+@app.get("/api/classes/choices")
+def class_choices(db: Session = Depends(get_db)):
+    return [course_choice(room) for room in list_courses(db)]
+
+
 @app.post("/api/classes", status_code=201)
 def post_class(body: ClassCreate, db: Session = Depends(get_db), user: Staff | None = Depends(read_staff)):
     _coordinator(user)
@@ -932,7 +938,7 @@ def post_class(body: ClassCreate, db: Session = Depends(get_db), user: Staff | N
     except ValueError as exc:
         raise _class_error(exc) from exc
     db.commit()
-    return course_admin(room)
+    return course_admin(room, include_pin=True)
 
 
 @app.post("/api/classes/enter")
@@ -986,7 +992,7 @@ def _course(db: Session, course_id: str) -> Classroom:
 @app.get("/api/admin/courses")
 def admin_courses(db: Session = Depends(get_db), user: Staff | None = Depends(read_staff)):
     _coordinator(user)
-    return [course_admin(room) for room in list_courses(db)]
+    return [course_admin(room, include_pin=True) for room in list_courses(db)]
 
 
 @app.post("/api/admin/courses", status_code=201)
@@ -997,7 +1003,7 @@ def admin_create_course(body: ClassCreate, db: Session = Depends(get_db), user: 
     except ValueError as exc:
         raise _class_error(exc) from exc
     db.commit()
-    return course_admin(room)
+    return course_admin(room, include_pin=True)
 
 
 @app.patch("/api/admin/courses/{course_id}")
@@ -1014,7 +1020,7 @@ def admin_update_course(
     except ValueError as exc:
         raise _class_error(exc) from exc
     db.commit()
-    return course_admin(room)
+    return course_admin(room, include_pin=True)
 
 
 @app.delete("/api/admin/courses/{course_id}")

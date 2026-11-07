@@ -57,6 +57,7 @@ export type CourseInfo = {
 export type CourseRecord = CourseInfo & {
   has_exam: boolean;
   teacher_token: string;
+  pin?: string;
 };
 
 export type Session =

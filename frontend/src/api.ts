@@ -116,6 +116,10 @@ export const api = {
     fetch(apiUrl("/api/classes/join"), { method: "POST", headers: headers(true, null), body: JSON.stringify(body) }).then((res) =>
       read<{ token: string; learner: { id: string; name: string; student_id: string }; class: CourseRecord; lessons: Lesson[] }>(res),
     ),
+  courseChoices: () =>
+    fetch(apiUrl("/api/classes/choices")).then((res) =>
+      read<{ id: string; name: string; course_code: string; section: string }[]>(res),
+    ),
   listCourses: (token: string) =>
     fetch(apiUrl("/api/admin/courses"), { headers: headers(false, token) }).then((res) => read<CourseRecord[]>(res)),
   saveCourse: (token: string, body: { name: string; course_code: string; section: string; pin: string }, id?: string) =>
