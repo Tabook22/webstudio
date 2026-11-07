@@ -74,14 +74,7 @@ export function CourseSettings({ studio }: { studio: Studio }) {
     }
   }
 
-  function startNew() {
-    const numbers = courses
-      .filter((item) => item.course_code === form.course_code)
-      .map((item) => Number(item.section))
-      .filter((item) => Number.isFinite(item));
-    const next = numbers.length ? String(Math.max(...numbers) + 1) : "1";
-    setSelected("");
-    setForm({ name: form.name, course_code: form.course_code, section: next, pin: "" });
+  function clearPaper() {
     setQuestions("");
     setQuestionsAr("");
     setHtml("");
@@ -89,16 +82,44 @@ export function CourseSettings({ studio }: { studio: Studio }) {
     setError("");
   }
 
+  function startBlank() {
+    setSelected("");
+    setForm(empty);
+    clearPaper();
+  }
+
+  function startNew() {
+    const numbers = courses
+      .filter((item) => item.course_code === form.course_code.trim().toUpperCase())
+      .map((item) => Number(item.section))
+      .filter((item) => Number.isFinite(item));
+    const next = numbers.length ? String(Math.max(...numbers) + 1) : "1";
+    setSelected("");
+    setForm({ name: form.name, course_code: form.course_code, section: next, pin: "" });
+    clearPaper();
+  }
+
+  function draft() {
+    const code = form.course_code.trim().toUpperCase();
+    const section = String(Number.parseInt(form.section, 10) || form.section.trim());
+    const open = courses.find((item) => item.id === selected) || null;
+    const adding = !open || (open.course_code === code && open.section !== section);
+    return { code, section, open, adding };
+  }
+
   async function saveCourse(event: FormEvent) {
     event.preventDefault();
     if (!token) return;
+    const { adding } = draft();
     setBusy(true);
     setError("");
     setNote("");
     try {
-      const saved = await api.saveCourse(token, form, selected || undefined);
+      const saved = await api.saveCourse(token, form, adding ? undefined : selected);
       await load(saved.id);
-      setNote(tx("Course saved.", "تم حفظ المقرر."));
+      setNote(adding
+        ? tx("Section added. Students use this course code, this section, and this PIN.", "تمت إضافة الشعبة. يستخدم الطلاب رمز المقرر وهذه الشعبة وهذا الرقم السري.")
+        : tx("Section saved.", "تم حفظ الشعبة."));
     } catch (err) {
       setError(localizeError(err instanceof Error ? err.message : "Request failed", lang));
     } finally {
@@ -145,18 +166,37 @@ export function CourseSettings({ studio }: { studio: Studio }) {
     }
   }
 
+  const { code: typedCode, open: current, adding } = draft();
+  const sameCode = courses.filter((item) => item.course_code === typedCode);
+  const groups = [...courses.reduce((map, course) => {
+    const list = map.get(course.course_code) || [];
+    list.push(course);
+    map.set(course.course_code, list);
+    return map;
+  }, new Map<string, CourseRecord[]>())];
+
   return (
     <div className="course-settings">
       <div className="course-side">
-        <button type="button" className="tb" onClick={startNew}>{tx("Add a section", "إضافة شعبة")}</button>
+        <div className="form-actions">
+          <button type="button" className="tb" onClick={startBlank}>{tx("New course", "مقرر جديد")}</button>
+          <button type="button" className="tb" onClick={startNew}>{tx("Add a section", "إضافة شعبة")}</button>
+        </div>
         <ul className="course-list">
-          {courses.map((course) => (
-            <li key={course.id}>
-              <button type="button" aria-pressed={course.id === selected} onClick={() => void pick(course)}>
-                <strong dir="auto">{course.name}</strong>
-                <span dir="ltr">{course.course_code} · {course.section}</span>
-                {course.has_exam && <em>{tx("Exam", "اختبار")}</em>}
-              </button>
+          {groups.map(([code, items]) => (
+            <li key={code}>
+              <p className="course-group" dir="ltr">{code}</p>
+              <ul>
+                {items.map((course) => (
+                  <li key={course.id}>
+                    <button type="button" aria-pressed={course.id === selected} onClick={() => void pick(course)}>
+                      <strong dir="auto">{course.name}</strong>
+                      <span>{tx("Section", "الشعبة")} {course.section}</span>
+                      {course.has_exam && <em>{tx("Exam", "اختبار")}</em>}
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </li>
           ))}
         </ul>
@@ -164,27 +204,33 @@ export function CourseSettings({ studio }: { studio: Studio }) {
       </div>
       <div className="course-editor">
         <form className="stack-form" onSubmit={(event) => void saveCourse(event)}>
-          <p className="hint">{tx("One course title and one course code can have many sections. Section 1 and section 2 stay separate.", "عنوان واحد ورمز واحد يمكن أن يكون لهما عدة شعب. الشعبة 1 والشعبة 2 منفصلتان.")}</p>
+          <p className="hint">{tx("The same title and the same course code can be used for many sections. Each section has its own PIN, its own students, and its own exam. A different title or a different code is a different course.", "العنوان نفسه ورمز المقرر نفسه يمكن استخدامهما لعدة شعب. لكل شعبة رقمها السري وطلابها واختبارها. العنوان المختلف أو الرمز المختلف مقرر مختلف.")}</p>
+          {sameCode.length > 0 && <p className="hint" dir="ltr">{typedCode} · {sameCode.map((item) => item.section).join(", ")}</p>}
+          {adding && current && <p className="hint">{tx("This adds a new section. The section you selected stays as it is.", "هذا يضيف شعبة جديدة. الشعبة التي حددتها تبقى كما هي.")}</p>}
           <label>{tx("Course title", "عنوان المقرر")}<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} dir="auto" /></label>
           <div className="form-row">
             <label>{tx("Course code", "رمز المقرر")}<input dir="ltr" value={form.course_code} onChange={(event) => setForm({ ...form, course_code: event.target.value.toUpperCase() })} placeholder="CMPS100A" /></label>
             <label>{tx("Section", "الشعبة")}<input dir="ltr" inputMode="numeric" value={form.section} onChange={(event) => setForm({ ...form, section: event.target.value })} /></label>
           </div>
-          <label>{tx(selected ? "New PIN, or leave blank to keep it" : "PIN you will remember", selected ? "رقم سري جديد، أو اتركه فارغًا للإبقاء عليه" : "رقم سري تتذكره")}<input dir="ltr" inputMode="numeric" type="password" value={form.pin} onChange={(event) => setForm({ ...form, pin: event.target.value })} autoComplete="new-password" /></label>
+          <label>{tx(adding ? "PIN for this section" : "New PIN, or leave blank to keep it", adding ? "الرقم السري لهذه الشعبة" : "رقم سري جديد، أو اتركه فارغًا للإبقاء عليه")}<input dir="ltr" inputMode="numeric" type="password" value={form.pin} onChange={(event) => setForm({ ...form, pin: event.target.value })} autoComplete="new-password" /></label>
           <div className="form-actions">
-            <button className="tb primary" type="submit" disabled={busy}>{selected ? tx("Save course", "حفظ المقرر") : tx("Create course", "إنشاء المقرر")}</button>
+            <button className="tb primary" type="submit" disabled={busy}>{adding ? tx("Add this section", "أضف هذه الشعبة") : tx("Save this section", "احفظ هذه الشعبة")}</button>
             {selected && <button className="tb" type="button" disabled={busy} onClick={() => { const course = courses.find((item) => item.id === selected); if (course) studio.openSection(course); }}>{tx("Open this section", "افتح هذه الشعبة")}</button>}
             {selected && <button className="tb danger" type="button" disabled={busy} onClick={() => void remove()}>{tx("Remove", "حذف")}</button>}
           </div>
         </form>
         <form className="stack-form exam-fields" onSubmit={(event) => { event.preventDefault(); void saveExam(); }}>
           <h3>{tx("Exam for this section", "اختبار هذه الشعبة")}</h3>
-          <p className="hint">{tx("Students in this section see these questions and this example when they open HTML exam.", "يرى طلاب هذه الشعبة هذه الأسئلة وهذا المثال عندما يفتحون اختبار HTML.")}</p>
+          {adding ? (
+            <p className="hint">{tx("Add the section first. Then write the exam that belongs only to it.", "أضف الشعبة أولًا. ثم اكتب الاختبار الذي يخصها وحدها.")}</p>
+          ) : (
+            <p className="hint">{tx("Students in this section see these questions and this example when they open HTML exam. Another section can have a different exam.", "يرى طلاب هذه الشعبة هذه الأسئلة وهذا المثال عندما يفتحون اختبار HTML. يمكن أن يكون لشعبة أخرى اختبار مختلف.")}</p>
+          )}
           <label>{tx("Questions in English", "الأسئلة بالإنجليزية")}<textarea rows={5} value={questions} onChange={(event) => setQuestions(event.target.value)} /></label>
           <label>{tx("Questions in Arabic", "الأسئلة بالعربية")}<textarea rows={5} dir="rtl" value={questionsAr} onChange={(event) => setQuestionsAr(event.target.value)} /></label>
           <label>{tx("Example HTML", "مثال HTML")}<textarea rows={8} dir="ltr" spellCheck={false} value={html} onChange={(event) => setHtml(event.target.value)} /></label>
           <div className="form-actions">
-            <button className="tb primary" type="submit" disabled={busy || !selected}>{tx("Save exam", "حفظ الاختبار")}</button>
+            <button className="tb primary" type="submit" disabled={busy || adding || !selected}>{tx("Save exam", "حفظ الاختبار")}</button>
             <button className="tb" type="button" disabled={busy} onClick={() => { setQuestions(DEFAULT_EXAM.questions); setQuestionsAr(DEFAULT_EXAM.questionsAr || ""); setHtml(DEFAULT_EXAM.html); }}>{tx("Use the sample exam", "استخدم الاختبار النموذجي")}</button>
           </div>
         </form>

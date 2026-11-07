@@ -136,15 +136,15 @@ class ClassCreate(BaseModel):
 
 
 class ClassEnter(BaseModel):
-    course_code: str = Field(min_length=1, max_length=16)
-    section: str = Field(min_length=1, max_length=4)
+    course_code: str = ""
+    section: str = ""
     pin: str = ""
 
 
 class ClassJoin(BaseModel):
-    course_code: str = Field(min_length=1, max_length=16)
-    section: str = Field(min_length=1, max_length=4)
-    name: str = Field(min_length=1, max_length=40)
+    course_code: str = ""
+    section: str = ""
+    name: str = ""
     student_id: str = ""
     pin: str = ""
 

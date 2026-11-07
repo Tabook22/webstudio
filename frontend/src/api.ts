@@ -27,6 +27,11 @@ function errorText(detail: unknown, fallback: string) {
     if (first && typeof first.msg === "string") {
       const loc = "loc" in first && Array.isArray(first.loc) ? String(first.loc.at(-1) || "") : "";
       if (loc === "pin") return "The PIN must be 4 to 8 digits.";
+      if (loc === "name") return "Type your name so the lecturer can see it.";
+      if (loc === "course_code") return "Type the course code.";
+      if (loc === "section") return "Type the section number.";
+      if (loc === "student_id") return "Type your student ID.";
+      if (first.msg === "String should have at least 1 character") return "Fill in every box, then press Enter class.";
       return first.msg;
     }
   }

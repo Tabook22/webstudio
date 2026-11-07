@@ -418,7 +418,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .join-code.course strong { font-size: 1.15rem; letter-spacing: 0.04em; }
 .course-settings { display: grid; grid-template-columns: 240px 1fr; gap: 16px; align-items: start; }
 .course-side, .course-editor { display: grid; gap: 10px; }
-.course-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; max-height: 460px; overflow: auto; }
+.course-list, .course-list ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.course-list { max-height: 460px; overflow: auto; }
+.course-group { margin: 4px 0 0; font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; }
 .course-list button { width: 100%; text-align: start; display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); }
 .course-list button[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--panel)); }
 .course-list span, .course-list em { font-family: var(--mono); font-size: 12px; font-style: normal; color: var(--muted, var(--ink)); }

@@ -142,21 +142,31 @@ function ClassForms({ studio, gate }: { studio: Studio; gate?: boolean }) {
         <button type="button" aria-selected={who === "staff"} onClick={() => setWho("staff")}>{tx("Coordinator", "منسق المقرر")}</button>
       </div>
       {who === "student" ? (
-        <form className="stack-form" onSubmit={(event) => { event.preventDefault(); void run(() => studio.joinClass(code, section, name, pin, studentId)); }}>
-          <p className="hint">{tx("Enter your student ID, your name, and the course PIN. Your ID keeps a workspace of its own. Next time, the same ID brings back the websites and folders you saved.", "أدخل رقمك الجامعي واسمك ورقم المقرر السري. رقمك يحتفظ بمساحة عمل خاصة. في المرة القادمة يعيد نفس الرقم المواقع والمجلدات التي حفظتها.")}</p>
-          <label>{tx("Student ID", "الرقم الجامعي")}<input dir="ltr" value={studentId} onChange={(event) => setStudentId(event.target.value.toUpperCase())} autoComplete="off" /></label>
-          <label>{tx("Your name", "اسمك")}<input value={name} onChange={(event) => setName(event.target.value)} dir="auto" autoComplete="name" /></label>
-          <label>{tx("Course code", "رمز المقرر")}<input dir="ltr" value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} placeholder="CMPS100A" autoComplete="off" /></label>
-          <label>{tx("Section", "الشعبة")}<input dir="ltr" inputMode="numeric" value={section} onChange={(event) => setSection(event.target.value)} /></label>
-          <label>{tx("PIN from your instructor", "الرقم السري من المحاضر")}<input dir="ltr" inputMode="numeric" type="password" value={pin} onChange={(event) => setPin(event.target.value)} autoComplete="off" /></label>
+        <form className="stack-form" onSubmit={(event) => {
+          event.preventDefault();
+          const data = new FormData(event.currentTarget);
+          const text = (key: string) => String(data.get(key) || "");
+          void run(() => studio.joinClass(text("course_code"), text("section"), text("name"), text("pin"), text("student_id")));
+        }}>
+          <p className="hint">{tx("Enter your student ID, your name, the course code, your section, and the PIN for that section. Section 1 and section 2 stay separate even when the title and the code are the same.", "أدخل رقمك الجامعي واسمك ورمز المقرر وشعبتك والرقم السري لتلك الشعبة. الشعبة 1 والشعبة 2 منفصلتان حتى عندما يتطابق العنوان والرمز.")}</p>
+          <label>{tx("Student ID", "الرقم الجامعي")}<input name="student_id" dir="ltr" value={studentId} onChange={(event) => setStudentId(event.target.value.toUpperCase())} autoComplete="off" /></label>
+          <label>{tx("Your name", "اسمك")}<input name="name" value={name} onChange={(event) => setName(event.target.value)} dir="auto" autoComplete="name" /></label>
+          <label>{tx("Course code", "رمز المقرر")}<input name="course_code" dir="ltr" value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} placeholder="CMPS100A" autoComplete="off" /></label>
+          <label>{tx("Section", "الشعبة")}<input name="section" dir="ltr" inputMode="numeric" value={section} onChange={(event) => setSection(event.target.value)} /></label>
+          <label>{tx("PIN from your instructor", "الرقم السري من المحاضر")}<input name="pin" dir="ltr" inputMode="numeric" type="password" value={pin} onChange={(event) => setPin(event.target.value)} autoComplete="off" /></label>
           <button className="tb primary" type="submit" disabled={busy}>{tx("Enter class", "ادخل إلى الصف")}</button>
         </form>
       ) : who === "teacher" ? (
-        <form className="stack-form" onSubmit={(event) => { event.preventDefault(); void run(() => studio.enterAsTeacher(openCode, openSection, openPin)); }}>
-          <p className="hint">{tx("A coordinator creates the course. Open your section with its code and its 4 to 8 digit PIN.", "منسق المقرر ينشئ المقرر. افتح شعبتك برمزها وبرقمها السري من 4 إلى 8 أرقام.")}</p>
-          <label>{tx("Course code", "رمز المقرر")}<input dir="ltr" value={openCode} onChange={(event) => setOpenCode(event.target.value.toUpperCase())} placeholder="CMPS100A" autoComplete="off" /></label>
-          <label>{tx("Section", "الشعبة")}<input dir="ltr" inputMode="numeric" value={openSection} onChange={(event) => setOpenSection(event.target.value)} autoComplete="off" /></label>
-          <label>{tx("Section PIN", "الرقم السري للشعبة")}<input dir="ltr" inputMode="numeric" name="section-pin" type="password" value={openPin} onChange={(event) => setOpenPin(event.target.value)} autoComplete="off" /></label>
+        <form className="stack-form" onSubmit={(event) => {
+          event.preventDefault();
+          const data = new FormData(event.currentTarget);
+          const text = (key: string) => String(data.get(key) || "");
+          void run(() => studio.enterAsTeacher(text("course_code"), text("section"), text("pin")));
+        }}>
+          <p className="hint">{tx("Open one section with its course code, section number, and its own 4 to 8 digit PIN. Another section of the same course has a different PIN and a different exam.", "افتح شعبة واحدة برمز المقرر ورقم الشعبة ورقمها السري الخاص من 4 إلى 8 أرقام. الشعبة الأخرى من المقرر نفسه لها رقم سري مختلف واختبار مختلف.")}</p>
+          <label>{tx("Course code", "رمز المقرر")}<input name="course_code" dir="ltr" value={openCode} onChange={(event) => setOpenCode(event.target.value.toUpperCase())} placeholder="CMPS100A" autoComplete="off" /></label>
+          <label>{tx("Section", "الشعبة")}<input name="section" dir="ltr" inputMode="numeric" value={openSection} onChange={(event) => setOpenSection(event.target.value)} autoComplete="off" /></label>
+          <label>{tx("Section PIN", "الرقم السري للشعبة")}<input name="pin" dir="ltr" inputMode="numeric" type="password" value={openPin} onChange={(event) => setOpenPin(event.target.value)} autoComplete="off" /></label>
           <button className="tb primary" type="submit" disabled={busy}>{tx("Open lecturer view", "افتح لوحة المحاضر")}</button>
         </form>
       ) : studio.staff ? (
