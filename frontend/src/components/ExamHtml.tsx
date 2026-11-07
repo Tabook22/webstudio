@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { api } from "../api";
 import { DEFAULT_EXAM, EXAM_FILE, examPreview, examQuestions, readExam, type ExamPaper } from "../editor/exam";
 import { useI18n } from "../i18n";
 import type { Studio } from "../studio";
@@ -8,9 +9,12 @@ const draftKey = (id: string) => `webstudio:exam-answer:${id}`;
 export function ExamHtml({ studio }: { studio: Studio }) {
   const { tx, lang } = useI18n();
   const project = studio.project;
-  const saved = project ? readExam(project.files) : null;
-  const paper = saved ?? DEFAULT_EXAM;
   const learner = studio.session?.role === "learner";
+  const classId = studio.session?.role === "learner" ? studio.session.classId : "";
+  const saved = project ? readExam(project.files) : null;
+  const paper = learner ? DEFAULT_EXAM : (saved ?? DEFAULT_EXAM);
+  const [courseExam, setCourseExam] = useState<ExamPaper | null>(null);
+  const [examState, setExamState] = useState<"loading" | "missing" | "ready">(learner ? "loading" : "ready");
   const [editing, setEditing] = useState(false);
   const [questions, setQuestions] = useState(paper.questions);
   const [questionsAr, setQuestionsAr] = useState(paper.questionsAr || "");
@@ -28,12 +32,35 @@ export function ExamHtml({ studio }: { studio: Studio }) {
   if (project && project.id !== seen) {
     setSeen(project.id);
     setEditing(false);
-    setQuestions(paper.questions);
-    setQuestionsAr(paper.questionsAr || "");
-    setTemplate(paper.html);
+    if (!learner) {
+      setQuestions(paper.questions);
+      setQuestionsAr(paper.questionsAr || "");
+      setTemplate(paper.html);
+    }
     setAnswer(localStorage.getItem(draftKey(project.id)) || "");
     history.current = { past: [], future: [] };
   }
+
+  useEffect(() => {
+    if (!learner || !classId) return;
+    let gone = false;
+    api.myExam(studio.session?.role === "learner" ? studio.session.token : "").then((result) => {
+      if (gone) return;
+      if (!result.exam) {
+        setCourseExam(null);
+        setExamState("missing");
+        return;
+      }
+      setCourseExam(result.exam);
+      setQuestions(result.exam.questions);
+      setQuestionsAr(result.exam.questionsAr || "");
+      setTemplate(result.exam.html);
+      setExamState("ready");
+    }).catch(() => {
+      if (!gone) setExamState("missing");
+    });
+    return () => { gone = true; };
+  }, [learner, classId, studio.session]);
 
   function remember(next: string) {
     const current = answerRef.current;
@@ -78,7 +105,25 @@ export function ExamHtml({ studio }: { studio: Studio }) {
 
   if (!project) return null;
 
-  const shown: ExamPaper = editing ? { questions, html: template } : paper;
+  const shown: ExamPaper = editing ? { questions, html: template } : (learner && courseExam ? courseExam : paper);
+
+  if (learner && examState !== "ready") {
+    return (
+      <section className="exam">
+        <header className="begin-top">
+          <div>
+            <p className="begin-kicker">{tx("HTML exam", "اختبار HTML")}</p>
+            <p className="begin-cheer">{examState === "loading"
+              ? tx("Opening the exam for your section…", "جارٍ فتح اختبار شعبتك…")
+              : tx("Your lecturer has not published an exam for this section yet.", "لم ينشر المحاضر اختبارًا لهذه الشعبة بعد.")}</p>
+          </div>
+          <div className="begin-actions">
+            <IconButton name="back" label={tx("Back to design", "العودة للتصميم")} flip={lang === "ar"} onClick={studio.closeExam} />
+          </div>
+        </header>
+      </section>
+    );
+  }
   const previewSource = editing ? template : answer;
 
   function giveExam() {

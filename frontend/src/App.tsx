@@ -109,7 +109,7 @@ function StudioShell() {
         <div className="ew-menu">
           <EwMenus studio={studio} setHand={setHand} place={place} inTable={inTable} />
           <div className="ew-menu-end">
-            <button type="button" className="ew-class" onClick={() => studio.setModal({ type: "class" })}>{studio.session ? studio.session.className : tx("Classroom", "الصف الدراسي")}</button>
+            <button type="button" className="ew-class" onClick={() => studio.setModal({ type: "class" })}>{studio.session?.role === "teacher" ? tx("Course settings", "إعدادات المقررات") : studio.session ? studio.session.className : tx("Classroom", "الصف الدراسي")}</button>
             <LangSwitch />
           </div>
         </div>

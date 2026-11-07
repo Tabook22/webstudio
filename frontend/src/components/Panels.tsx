@@ -936,10 +936,15 @@ export function Inspector({ studio }: { studio: Studio }) {
             {(sel.tag === "ul" || sel.tag === "ol" || sel.tag === "li") && (
               <Fold tone="amber" open title={tx("List", "القائمة")} icon={<Mark d="M3 4.5h2M7 4.5h6M3 8h2M7 8h6M3 11.5h2M7 11.5h6" />}>
                 <div className="tool-row">
-                  <button type="button" className="tb" onClick={() => studio.command({ cmd: "list-add", path: sel.path })}>{tx("Add item", "إضافة بند")}</button>
-                  <button type="button" className="tb" onClick={() => studio.command({ cmd: "list-remove", path: sel.path })}>{tx("Remove item", "حذف البند")}</button>
-                  <button type="button" className="tb" onClick={() => studio.command({ cmd: "list-kind", path: sel.path, tag: "ul" })}>{tx("Bullets", "نقاط")}</button>
-                  <button type="button" className="tb" onClick={() => studio.command({ cmd: "list-kind", path: sel.path, tag: "ol" })}>{tx("Numbers", "أرقام")}</button>
+                  <IconButton title={tx("Add item", "إضافة بند")} onClick={() => studio.command({ cmd: "list-add", path: sel.path })}><Mark d="M8 3v10M3 8h10" /></IconButton>
+                  <IconButton title={tx("Remove item", "حذف البند")} danger onClick={() => studio.command({ cmd: "list-remove", path: sel.path })}><Mark d="M3 8h10" /></IconButton>
+                </div>
+                <div className="tool-row">
+                  {LIST_MARKS.map((mark) => (
+                    <IconButton key={mark.id} title={tx(mark.label[0], mark.label[1])} pressed={listMarker(sel) === mark.id} onClick={() => studio.command({ cmd: "list-marker", path: sel.path, value: mark.id })}>
+                      <ListMark kind={mark.id} />
+                    </IconButton>
+                  ))}
                 </div>
               </Fold>
             )}
@@ -1273,8 +1278,62 @@ function CodeLinkCard({ studio }: { studio: Studio }) {
   );
 }
 
-function IconButton({ title, onClick, children, danger }: { title: string; onClick: () => void; children: ReactNode; danger?: boolean }) {
-  return <button type="button" className={`tool${danger ? " danger" : ""}`} title={title} aria-label={title} onClick={onClick}>{children}</button>;
+function IconButton({ title, onClick, children, danger, pressed }: { title: string; onClick: () => void; children: ReactNode; danger?: boolean; pressed?: boolean }) {
+  return <button type="button" className={`tool${danger ? " danger" : ""}${pressed ? " on" : ""}`} title={title} aria-label={title} aria-pressed={pressed} onClick={onClick}>{children}</button>;
+}
+
+const LIST_MARKS: { id: string; label: [string, string] }[] = [
+  { id: "disc", label: ["Filled circles", "دوائر ممتلئة"] },
+  { id: "circle", label: ["Circles", "دوائر"] },
+  { id: "square", label: ["Squares", "مربعات"] },
+  { id: "none", label: ["No marker", "بدون علامة"] },
+  { id: "decimal", label: ["Numbers", "أرقام"] },
+  { id: "decimal-leading-zero", label: ["Numbers with a zero", "أرقام تبدأ بصفر"] },
+  { id: "lower-alpha", label: ["Small letters", "حروف صغيرة"] },
+  { id: "upper-alpha", label: ["Capital letters", "حروف كبيرة"] },
+  { id: "lower-roman", label: ["Small Roman numbers", "أرقام رومانية صغيرة"] },
+  { id: "upper-roman", label: ["Capital Roman numbers", "أرقام رومانية كبيرة"] },
+];
+
+function listMarker(sel: { tag: string; style: Record<string, string> }) {
+  const raw = (sel.style.listStyleType || "").toLowerCase().replace(/['"]/g, "");
+  if (LIST_MARKS.some((mark) => mark.id === raw)) return raw;
+  return sel.tag === "ol" ? "decimal" : "disc";
+}
+
+function ListMark({ kind }: { kind: string }) {
+  const line = "M7.2 4.2h6M7.2 8h6M7.2 11.8h6";
+  if (kind === "disc" || kind === "circle" || kind === "square") {
+    return (
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        {kind === "square" ? (
+          <>
+            <rect x="2.2" y="2.8" width="2.6" height="2.6" fill="currentColor" />
+            <rect x="2.2" y="6.7" width="2.6" height="2.6" fill="currentColor" />
+            <rect x="2.2" y="10.6" width="2.6" height="2.6" fill="currentColor" />
+          </>
+        ) : [3.9, 8, 12.1].map((y) => (
+          <circle key={y} cx="3.4" cy={y} r="1.35" fill={kind === "disc" ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.3" />
+        ))}
+        <path d={line} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  const glyph = kind === "decimal" ? "1" : kind === "decimal-leading-zero" ? "01" : kind === "lower-alpha" ? "a" : kind === "upper-alpha" ? "A" : kind === "lower-roman" ? "i" : kind === "upper-roman" ? "I" : "";
+  if (glyph) {
+    return (
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <text x="0.4" y="7.1" fill="currentColor" fontSize={glyph.length > 1 ? 5.2 : 6.4} fontFamily="Segoe UI, sans-serif">{glyph}</text>
+        <text x="0.4" y="12.6" fill="currentColor" fontSize={glyph.length > 1 ? 5.2 : 6.4} fontFamily="Segoe UI, sans-serif">{glyph === "1" ? "2" : glyph === "01" ? "02" : glyph === "a" ? "b" : glyph === "A" ? "B" : glyph === "i" ? "ii" : "II"}</text>
+        <path d="M8 4.6h5.5M8 10.2h5.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M2.2 4.2h3.2M2.2 8h3.2M2.2 11.8h3.2M7.2 4.2h6M7.2 8h6M7.2 11.8h6" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
 }
 
 function asHex(value: string) {

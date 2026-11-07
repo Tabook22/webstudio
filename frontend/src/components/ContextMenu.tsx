@@ -124,8 +124,16 @@ export function ContextMenu({ studio, at }: { studio: Studio; at: { x: number; y
           <div className="ctx-label">{tx("List", "القائمة")}</div>
           <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => run("list-add")}>{tx("Add item", "إضافة بند")}</button>
           <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => run("list-remove")}>{tx("Remove item", "حذف البند")}</button>
-          <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => run("list-kind", { tag: "ul" })}>{tx("Bullets", "نقاط")}</button>
-          <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => run("list-kind", { tag: "ol" })}>{tx("Numbers", "أرقام")}</button>
+          <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => run("list-marker", { value: "disc" })}>{tx("Filled circles", "دوائر ممتلئة")}</button>
+          <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => run("list-marker", { value: "circle" })}>{tx("Circles", "دوائر")}</button>
+          <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => run("list-marker", { value: "square" })}>{tx("Squares", "مربعات")}</button>
+          <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => run("list-marker", { value: "none" })}>{tx("No marker", "بدون علامة")}</button>
+          <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => run("list-marker", { value: "decimal" })}>{tx("Numbers", "أرقام")}</button>
+          <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => run("list-marker", { value: "decimal-leading-zero" })}>{tx("Numbers with a zero", "أرقام تبدأ بصفر")}</button>
+          <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => run("list-marker", { value: "lower-alpha" })}>{tx("Small letters", "حروف صغيرة")}</button>
+          <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => run("list-marker", { value: "upper-alpha" })}>{tx("Capital letters", "حروف كبيرة")}</button>
+          <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => run("list-marker", { value: "lower-roman" })}>{tx("Small Roman numbers", "أرقام رومانية صغيرة")}</button>
+          <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => run("list-marker", { value: "upper-roman" })}>{tx("Capital Roman numbers", "أرقام رومانية كبيرة")}</button>
         </>
       )}
       {!part && sel.tag !== "img" && (

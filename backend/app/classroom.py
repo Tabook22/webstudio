@@ -65,8 +65,45 @@ def _clean_pin(pin: str) -> str:
     return pin
 
 
+def _clean_title(name: str) -> str:
+    name = " ".join(name.split())
+    if not name or len(name) > 120:
+        raise ValueError("Give the course a title.")
+    return name
+
+
+def _clean_code(code: str) -> str:
+    code = "".join(code.strip().upper().split())
+    if not code or len(code) > 16 or not code.isalnum():
+        raise ValueError("The course code uses letters and numbers, up to 16.")
+    return code
+
+
+def _clean_section(section: str) -> str:
+    section = section.strip()
+    if not section.isdigit() or int(section) < 1 or len(section) > 4:
+        raise ValueError("The section is a number such as 1, 2, or 3.")
+    return str(int(section))
+
+
+def _ensure_free(db: Session, code: str, section: str, except_id: str | None = None) -> None:
+    room = db.scalar(select(Classroom).where(Classroom.course_code == code, Classroom.section == section))
+    if room is not None and room.id != except_id:
+        raise ValueError("That course code already has this section. Use another section.")
+
+
 def class_out(room: Classroom) -> dict:
-    return {"id": room.id, "name": room.name, "join_code": room.join_code}
+    return {
+        "id": room.id,
+        "name": room.name,
+        "join_code": room.join_code,
+        "course_code": room.course_code or room.join_code,
+        "section": room.section or "1",
+    }
+
+
+def course_admin(room: Classroom) -> dict:
+    return {**class_out(room), "has_exam": read_exam(room) is not None, "teacher_token": room.teacher_token}
 
 
 def lesson_out(lesson: Lesson) -> dict:
@@ -118,16 +155,20 @@ def find_actor(db: Session, token: str) -> Actor | None:
     return Actor(role="learner", classroom=room, learner=learner)
 
 
-def create_class(db: Session, name: str, pin: str) -> Classroom:
-    name = name.strip()
-    if not name or len(name) > 80:
-        raise ValueError("Give the class a name.")
+def create_class(db: Session, name: str, course_code: str, section: str, pin: str) -> Classroom:
+    name = _clean_title(name)
+    code = _clean_code(course_code)
+    number = _clean_section(section)
+    _ensure_free(db, code, number)
     room = Classroom(
         id=new_id(),
         name=name,
         join_code=_code(db),
+        course_code=code,
+        section=number,
         pin_hash=hash_pin(_clean_pin(pin)),
         teacher_token=secrets.token_urlsafe(24),
+        exam_json="",
         created_at=now_ms(),
     )
     db.add(room)
@@ -135,20 +176,89 @@ def create_class(db: Session, name: str, pin: str) -> Classroom:
     return room
 
 
-def enter_class(db: Session, code: str, pin: str) -> Classroom:
-    room = db.scalar(select(Classroom).where(Classroom.join_code == code.strip().upper()))
-    if room is None or not pin_matches(room.pin_hash, pin.strip()):
-        raise ValueError("That class code or PIN is not right.")
+def update_class(db: Session, room: Classroom, name: str, course_code: str, section: str, pin: str) -> Classroom:
+    name = _clean_title(name)
+    code = _clean_code(course_code)
+    number = _clean_section(section)
+    _ensure_free(db, code, number, room.id)
+    room.name = name
+    room.course_code = code
+    room.section = number
+    if pin.strip():
+        room.pin_hash = hash_pin(_clean_pin(pin))
+    db.flush()
     return room
 
 
-def join_class(db: Session, code: str, name: str) -> tuple[Learner, Classroom]:
+def list_courses(db: Session) -> list[Classroom]:
+    rooms = list(db.scalars(select(Classroom)).all())
+    rooms.sort(key=lambda room: (room.course_code or "", int(room.section) if str(room.section).isdigit() else 0))
+    return rooms
+
+
+def delete_course(db: Session, room: Classroom) -> None:
+    projects = list(db.scalars(select(Project).where(Project.class_id == room.id)).all())
+    for project in projects:
+        db.delete(project)
+    db.delete(room)
+    db.flush()
+
+
+def read_exam(room: Classroom) -> dict | None:
+    raw = (room.exam_json or "").strip()
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(data, dict):
+        return None
+    questions = data.get("questions")
+    html = data.get("html")
+    if not isinstance(questions, str) or not isinstance(html, str) or not questions.strip() or not html.strip():
+        return None
+    arabic = data.get("questionsAr")
+    return {"questions": questions, "questionsAr": arabic if isinstance(arabic, str) else "", "html": html}
+
+
+def write_exam(room: Classroom, questions: str, questions_ar: str, html: str) -> dict | None:
+    questions = questions.strip()
+    questions_ar = questions_ar.strip()
+    html = html.strip()
+    if not questions and not html and not questions_ar:
+        room.exam_json = ""
+        return None
+    if not questions or not html:
+        raise ValueError("Write the questions and the example page.")
+    if len(questions) > 20000 or len(questions_ar) > 20000 or len(html) > 100000:
+        raise ValueError("That exam is too long.")
+    paper = {"questions": questions, "questionsAr": questions_ar, "html": html}
+    room.exam_json = json.dumps(paper, ensure_ascii=False)
+    return paper
+
+
+def enter_class(db: Session, course_code: str, section: str, pin: str) -> Classroom:
+    try:
+        code = _clean_code(course_code)
+        number = _clean_section(section)
+    except ValueError:
+        raise ValueError("That course code, section, or PIN is not right.") from None
+    room = db.scalar(select(Classroom).where(Classroom.course_code == code, Classroom.section == number))
+    if room is None or not pin_matches(room.pin_hash, pin.strip()):
+        raise ValueError("That course code, section, or PIN is not right.")
+    return room
+
+
+def join_class(db: Session, course_code: str, section: str, name: str) -> tuple[Learner, Classroom]:
     name = " ".join(name.split())
     if not name or len(name) > 40:
         raise ValueError("Type your name so the lecturer can see it.")
-    room = db.scalar(select(Classroom).where(Classroom.join_code == code.strip().upper()))
+    code = _clean_code(course_code)
+    number = _clean_section(section)
+    room = db.scalar(select(Classroom).where(Classroom.course_code == code, Classroom.section == number))
     if room is None:
-        raise ValueError("No class uses that code.")
+        raise ValueError("No class uses that code and section.")
     learner = Learner(
         id=new_id(),
         class_id=room.id,

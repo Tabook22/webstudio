@@ -1,4 +1,6 @@
-import type { Asset, ClassHome, Kit, Lesson, MissionState, Project, ProjectSummary, TemplateInfo } from "./types";
+import type { Asset, ClassHome, CourseRecord, Kit, Lesson, MissionState, Project, ProjectSummary, TemplateInfo } from "./types";
+
+type ExamBody = { questions: string; questionsAr?: string; html: string };
 
 /** Empty on the local studio. `/webstudio` when the site is published under that path. */
 export function apiUrl(path: string) {
@@ -85,18 +87,36 @@ export const api = {
     const res = await fetch(apiUrl("/api/import"), { method: "POST", headers: headers(), body: data });
     return read<Project>(res);
   },
-  createClass: (body: { name: string; pin: string }) =>
+  createClass: (body: { name: string; course_code: string; section: string; pin: string }) =>
     fetch(apiUrl("/api/classes"), { method: "POST", headers: headers(true, null), body: JSON.stringify(body) }).then((res) =>
-      read<{ id: string; name: string; join_code: string; teacher_token: string }>(res),
+      read<CourseRecord>(res),
     ),
-  enterClass: (body: { join_code: string; pin: string }) =>
+  enterClass: (body: { course_code: string; section: string; pin: string }) =>
     fetch(apiUrl("/api/classes/enter"), { method: "POST", headers: headers(true, null), body: JSON.stringify(body) }).then((res) =>
-      read<{ id: string; name: string; join_code: string; teacher_token: string }>(res),
+      read<CourseRecord>(res),
     ),
-  joinClass: (body: { join_code: string; name: string }) =>
+  joinClass: (body: { course_code: string; section: string; name: string }) =>
     fetch(apiUrl("/api/classes/join"), { method: "POST", headers: headers(true, null), body: JSON.stringify(body) }).then((res) =>
-      read<{ token: string; learner: { id: string; name: string }; class: { id: string; name: string; join_code: string }; lessons: Lesson[] }>(res),
+      read<{ token: string; learner: { id: string; name: string }; class: CourseRecord; lessons: Lesson[] }>(res),
     ),
+  listCourses: (token: string) =>
+    fetch(apiUrl("/api/admin/courses"), { headers: headers(false, token) }).then((res) => read<CourseRecord[]>(res)),
+  saveCourse: (token: string, body: { name: string; course_code: string; section: string; pin: string }, id?: string) =>
+    fetch(apiUrl(id ? `/api/admin/courses/${id}` : "/api/admin/courses"), {
+      method: id ? "PATCH" : "POST",
+      headers: headers(true, token),
+      body: JSON.stringify(body),
+    }).then((res) => read<CourseRecord>(res)),
+  removeCourse: (token: string, id: string) =>
+    fetch(apiUrl(`/api/admin/courses/${id}`), { method: "DELETE", headers: headers(false, token) }).then((res) => read(res)),
+  courseExam: (token: string, id: string) =>
+    fetch(apiUrl(`/api/admin/courses/${id}/exam`), { headers: headers(false, token) }).then((res) => read<{ exam: ExamBody | null }>(res)),
+  saveCourseExam: (token: string, id: string, body: ExamBody) =>
+    fetch(apiUrl(`/api/admin/courses/${id}/exam`), { method: "PUT", headers: headers(true, token), body: JSON.stringify(body) }).then((res) =>
+      read<{ exam: ExamBody | null }>(res),
+    ),
+  myExam: (token: string) =>
+    fetch(apiUrl("/api/classes/exam"), { headers: headers(false, token) }).then((res) => read<{ exam: ExamBody | null }>(res)),
   classHome: (token: string) => fetch(apiUrl("/api/classes/home"), { headers: headers(false, token) }).then((res) => read<ClassHome>(res)),
   createLesson: (token: string, body: { title: string; brief_en: string; brief_ar: string; template_id: string; site_lang: string; mission_ids: string[] }) =>
     fetch(apiUrl("/api/classes/lessons"), { method: "POST", headers: headers(true, token), body: JSON.stringify(body) }).then((res) => read<Lesson>(res)),

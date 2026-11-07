@@ -28,8 +28,10 @@ from .classroom import (
     board,
     claim_device,
     class_out,
+    course_admin,
     create_class,
     create_lesson,
+    delete_course,
     delete_lesson,
     enter_class,
     find_actor,
@@ -37,11 +39,15 @@ from .classroom import (
     learner_home,
     lesson_out,
     lessons_for,
+    list_courses,
     mission_out,
+    read_exam,
     start_lesson,
+    update_class,
+    write_exam,
 )
 from .content import public_kits, public_templates, template_by_id
-from .db import AppState, Asset, Project, get_db, init_db, now_ms
+from .db import AppState, Asset, Classroom, Project, get_db, init_db, now_ms
 from .services import add_asset, build_zip, create_project, import_files
 
 DEVICE_RE = re.compile(r"^[A-Za-z0-9_-]{8,40}$")
@@ -112,18 +118,35 @@ class ClaimBody(BaseModel):
 
 
 class ClassCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=80)
+    name: str = Field(min_length=1, max_length=120)
+    course_code: str = Field(min_length=1, max_length=16)
+    section: str = Field(min_length=1, max_length=4)
     pin: str = Field(min_length=4, max_length=8)
 
 
 class ClassEnter(BaseModel):
-    join_code: str = Field(min_length=4, max_length=8)
+    course_code: str = Field(min_length=1, max_length=16)
+    section: str = Field(min_length=1, max_length=4)
     pin: str = Field(min_length=4, max_length=8)
 
 
 class ClassJoin(BaseModel):
-    join_code: str = Field(min_length=4, max_length=8)
+    course_code: str = Field(min_length=1, max_length=16)
+    section: str = Field(min_length=1, max_length=4)
     name: str = Field(min_length=1, max_length=40)
+
+
+class CourseUpdate(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    course_code: str = Field(min_length=1, max_length=16)
+    section: str = Field(min_length=1, max_length=4)
+    pin: str = ""
+
+
+class ExamWrite(BaseModel):
+    questions: str = ""
+    questionsAr: str = ""
+    html: str = ""
 
 
 class LessonCreate(BaseModel):
@@ -638,26 +661,26 @@ def _teacher(who: Actor | None) -> Actor:
 @app.post("/api/classes", status_code=201)
 def post_class(body: ClassCreate, db: Session = Depends(get_db)):
     try:
-        room = create_class(db, body.name, body.pin)
+        room = create_class(db, body.name, body.course_code, body.section, body.pin)
     except ValueError as exc:
         raise _class_error(exc) from exc
     db.commit()
-    return {**class_out(room), "teacher_token": room.teacher_token}
+    return course_admin(room)
 
 
 @app.post("/api/classes/enter")
 def post_enter(body: ClassEnter, db: Session = Depends(get_db)):
     try:
-        room = enter_class(db, body.join_code, body.pin)
+        room = enter_class(db, body.course_code, body.section, body.pin)
     except ValueError as exc:
         raise _class_error(exc) from exc
-    return {**class_out(room), "teacher_token": room.teacher_token}
+    return course_admin(room)
 
 
 @app.post("/api/classes/join", status_code=201)
 def post_join(body: ClassJoin, db: Session = Depends(get_db)):
     try:
-        learner, room = join_class(db, body.join_code, body.name)
+        learner, room = join_class(db, body.course_code, body.section, body.name)
     except ValueError as exc:
         raise _class_error(exc) from exc
     db.commit()
@@ -677,6 +700,86 @@ def class_home(db: Session = Depends(get_db), who: Actor | None = Depends(read_a
         return board(db, who.classroom)
     assert who.learner is not None
     return learner_home(db, who.learner, who.classroom)
+
+
+@app.get("/api/classes/exam")
+def class_exam(who: Actor | None = Depends(read_actor)):
+    if who is None:
+        raise HTTPException(status_code=401, detail="Sign in to the class again")
+    return {"exam": read_exam(who.classroom)}
+
+
+def _course(db: Session, course_id: str) -> Classroom:
+    room = db.get(Classroom, course_id)
+    if room is None:
+        raise HTTPException(status_code=404, detail="That course was not found.")
+    return room
+
+
+@app.get("/api/admin/courses")
+def admin_courses(db: Session = Depends(get_db), who: Actor | None = Depends(read_actor)):
+    _teacher(who)
+    return [course_admin(room) for room in list_courses(db)]
+
+
+@app.post("/api/admin/courses", status_code=201)
+def admin_create_course(body: ClassCreate, db: Session = Depends(get_db), who: Actor | None = Depends(read_actor)):
+    _teacher(who)
+    try:
+        room = create_class(db, body.name, body.course_code, body.section, body.pin)
+    except ValueError as exc:
+        raise _class_error(exc) from exc
+    db.commit()
+    return course_admin(room)
+
+
+@app.patch("/api/admin/courses/{course_id}")
+def admin_update_course(
+    course_id: str,
+    body: CourseUpdate,
+    db: Session = Depends(get_db),
+    who: Actor | None = Depends(read_actor),
+):
+    _teacher(who)
+    room = _course(db, course_id)
+    try:
+        update_class(db, room, body.name, body.course_code, body.section, body.pin)
+    except ValueError as exc:
+        raise _class_error(exc) from exc
+    db.commit()
+    return course_admin(room)
+
+
+@app.delete("/api/admin/courses/{course_id}")
+def admin_delete_course(course_id: str, db: Session = Depends(get_db), who: Actor | None = Depends(read_actor)):
+    _teacher(who)
+    room = _course(db, course_id)
+    delete_course(db, room)
+    db.commit()
+    return {"ok": True}
+
+
+@app.get("/api/admin/courses/{course_id}/exam")
+def admin_get_exam(course_id: str, db: Session = Depends(get_db), who: Actor | None = Depends(read_actor)):
+    _teacher(who)
+    return {"exam": read_exam(_course(db, course_id))}
+
+
+@app.put("/api/admin/courses/{course_id}/exam")
+def admin_put_exam(
+    course_id: str,
+    body: ExamWrite,
+    db: Session = Depends(get_db),
+    who: Actor | None = Depends(read_actor),
+):
+    _teacher(who)
+    room = _course(db, course_id)
+    try:
+        paper = write_exam(room, body.questions, body.questionsAr, body.html)
+    except ValueError as exc:
+        raise _class_error(exc) from exc
+    db.commit()
+    return {"exam": paper}
 
 
 @app.post("/api/classes/lessons", status_code=201)

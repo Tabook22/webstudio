@@ -217,9 +217,12 @@ export const BRIDGE = `
 
   function describe(el) {
     var style = {};
-    ["color", "backgroundColor", "fontSize", "textAlign", "padding", "margin", "borderRadius", "fontWeight", "fontStyle", "textDecoration", "fontFamily", "width", "height", "maxWidth", "display", "verticalAlign", "float", "objectFit"].forEach(function (prop) {
+    ["color", "backgroundColor", "fontSize", "textAlign", "padding", "margin", "borderRadius", "fontWeight", "fontStyle", "textDecoration", "fontFamily", "width", "height", "maxWidth", "display", "verticalAlign", "float", "objectFit", "listStyleType"].forEach(function (prop) {
       if (el.style[prop]) style[prop] = el.style[prop];
     });
+    if (el.tagName === "UL" || el.tagName === "OL" || el.tagName === "LI") {
+      style.listStyleType = (el.style.listStyleType || getComputedStyle(el).listStyleType || "").toLowerCase();
+    }
     var attrs = {};
     Array.prototype.forEach.call(el.attributes, function (attr) {
       if (attr.name === "class" || attr.name === "style" || attr.name.indexOf("data-wd") === 0 || attr.name === "contenteditable") return;
@@ -1997,6 +2000,24 @@ export const BRIDGE = `
       list.replaceWith(next);
       emitHtml();
       select(next);
+    }
+    if (message.cmd === "list-marker") {
+      var marked = el.closest("ul,ol");
+      if (!marked) return;
+      var marker = String(message.value || "disc");
+      var orderedMarkers = { decimal: 1, "decimal-leading-zero": 1, "lower-alpha": 1, "upper-alpha": 1, "lower-roman": 1, "upper-roman": 1, "lower-greek": 1 };
+      var markerTag = orderedMarkers[marker] ? "ol" : "ul";
+      var markedNext = marked;
+      if (marked.tagName.toLowerCase() !== markerTag) {
+        markedNext = document.createElement(markerTag);
+        markedNext.className = marked.className;
+        if (marked.getAttribute("style")) markedNext.setAttribute("style", marked.getAttribute("style"));
+        while (marked.firstChild) markedNext.appendChild(marked.firstChild);
+        marked.replaceWith(markedNext);
+      }
+      markedNext.style.listStyleType = marker;
+      emitHtml();
+      select(el.tagName === "LI" && markedNext.contains(el) ? el : markedNext);
     }
     if (message.cmd === "table-scope") {
       var cell = focusCell(el);

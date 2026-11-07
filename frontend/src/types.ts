@@ -46,6 +46,19 @@ export type Lesson = {
   created_at: number;
 };
 
+export type CourseInfo = {
+  id: string;
+  name: string;
+  join_code: string;
+  course_code: string;
+  section: string;
+};
+
+export type CourseRecord = CourseInfo & {
+  has_exam: boolean;
+  teacher_token: string;
+};
+
 export type Session =
   | {
       role: "learner";
@@ -53,6 +66,8 @@ export type Session =
       classId: string;
       className: string;
       joinCode: string;
+      courseCode?: string;
+      section?: string;
       name: string;
       learnerId: string;
     }
@@ -62,6 +77,8 @@ export type Session =
       classId: string;
       className: string;
       joinCode: string;
+      courseCode?: string;
+      section?: string;
     };
 
 export type ClassProject = {
@@ -85,13 +102,13 @@ export type ClassLearner = {
 export type ClassHome =
   | {
       role: "teacher";
-      class: { id: string; name: string; join_code: string };
+      class: CourseInfo;
       lessons: Lesson[];
       learners: ClassLearner[];
     }
   | {
       role: "learner";
-      class: { id: string; name: string; join_code: string };
+      class: CourseInfo;
       learner: { id: string; name: string };
       lessons: Lesson[];
     };

@@ -1151,19 +1151,22 @@ export function useStudio(lang: "en" | "ar") {
       .finally(() => setBooting(false));
   }
 
-  function rememberTeacher(room: { id: string; name: string; join_code: string; teacher_token: string }) {
+  function rememberTeacher(room: { id: string; name: string; join_code: string; course_code: string; section: string; teacher_token: string }) {
     const next: Session = {
       role: "teacher",
       token: room.teacher_token,
       classId: room.id,
       className: room.name,
       joinCode: room.join_code,
+      courseCode: room.course_code,
+      section: room.section,
     };
     writeSession(next);
     setSession(next);
     sessionRef.current = next;
-    if (needsGate) return enterThisComputer();
+    api.setToken(room.teacher_token);
     setModal({ type: "class" });
+    if (needsGate) return enterThisComputer();
   }
 
   async function enterThisComputer() {
@@ -1176,14 +1179,16 @@ export function useStudio(lang: "en" | "ar") {
     setOffline(false);
   }
 
-  async function joinClass(code: string, name: string) {
-    const result = await api.joinClass({ join_code: code.trim(), name: name.trim() });
+  async function joinClass(courseCode: string, section: string, name: string) {
+    const result = await api.joinClass({ course_code: courseCode.trim(), section: section.trim(), name: name.trim() });
     const next: Session = {
       role: "learner",
       token: result.token,
       classId: result.class.id,
       className: result.class.name,
       joinCode: result.class.join_code,
+      courseCode: result.class.course_code,
+      section: result.class.section,
       name: result.learner.name,
       learnerId: result.learner.id,
     };
@@ -1210,15 +1215,19 @@ export function useStudio(lang: "en" | "ar") {
     }
   }
 
-  async function createClass(name: string, pin: string) {
-    const room = await api.createClass({ name: name.trim(), pin: pin.trim() });
+  async function createClass(name: string, courseCode: string, section: string, pin: string) {
+    const room = await api.createClass({ name: name.trim(), course_code: courseCode.trim(), section: section.trim(), pin: pin.trim() });
     await rememberTeacher(room);
-    setToast(lang === "ar" ? `رمز الصف ${room.join_code}` : `Class code ${room.join_code}`);
+    setToast(lang === "ar" ? `${room.course_code} · الشعبة ${room.section}` : `${room.course_code} · section ${room.section}`);
   }
 
-  async function enterAsTeacher(code: string, pin: string) {
-    const room = await api.enterClass({ join_code: code.trim(), pin: pin.trim() });
+  async function enterAsTeacher(courseCode: string, section: string, pin: string) {
+    const room = await api.enterClass({ course_code: courseCode.trim(), section: section.trim(), pin: pin.trim() });
     await rememberTeacher(room);
+  }
+
+  function openSection(room: { id: string; name: string; join_code: string; course_code: string; section: string; teacher_token: string }) {
+    return rememberTeacher(room);
   }
 
   async function leaveClass() {
@@ -1649,6 +1658,7 @@ export function useStudio(lang: "en" | "ar") {
     joinClass,
     createClass,
     enterAsTeacher,
+    openSection,
     leaveClass,
     loadClass,
     publishLesson,

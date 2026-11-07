@@ -3,6 +3,7 @@ import { MISSIONS } from "../editor/learn";
 import { LangSwitch, localizeError, useI18n } from "../i18n";
 import type { Studio } from "../studio";
 import type { ClassHome, Lesson } from "../types";
+import { CourseSettings } from "./CourseSettings";
 
 export function StudioGate({ studio }: { studio: Studio }) {
   const { tx } = useI18n();
@@ -28,16 +29,25 @@ export function StudioGate({ studio }: { studio: Studio }) {
 
 export function ClassDialog({ studio }: { studio: Studio }) {
   const { tx } = useI18n();
+  const teacher = studio.session?.role === "teacher";
+  const [page, setPage] = useState<"settings" | "class">(teacher ? "settings" : "class");
   const close = () => studio.setModal(null);
   return (
     <div className="modal-back" onMouseDown={close}>
-      <div className="modal wide" role="dialog" aria-modal="true" aria-label={tx("Classroom", "الصف الدراسي")} onMouseDown={(event) => event.stopPropagation()}>
+      <div className="modal wide" role="dialog" aria-modal="true" aria-label={tx("Course settings", "إعدادات المقررات")} onMouseDown={(event) => event.stopPropagation()}>
         <header>
-          <h2>{studio.session ? studio.session.className : tx("Classroom", "الصف الدراسي")}</h2>
+          <h2>{teacher ? tx("Course settings", "إعدادات المقررات") : studio.session ? studio.session.className : tx("Classroom", "الصف الدراسي")}</h2>
           <button type="button" className="icon-btn" onClick={close} aria-label={tx("Close", "إغلاق")}>×</button>
         </header>
         <div className="modal-body">
-          {studio.session?.role === "teacher" && <TeacherBoard studio={studio} />}
+          {teacher && (
+            <div className="seg" role="tablist">
+              <button type="button" aria-selected={page === "settings"} onClick={() => setPage("settings")}>{tx("Courses", "المقررات")}</button>
+              <button type="button" aria-selected={page === "class"} onClick={() => setPage("class")}>{tx("This section", "هذه الشعبة")}</button>
+            </div>
+          )}
+          {teacher && page === "settings" && <CourseSettings studio={studio} />}
+          {teacher && page === "class" && <TeacherBoard studio={studio} />}
           {studio.session?.role === "learner" && <LearnerLessons studio={studio} />}
           {!studio.session && <ClassForms studio={studio} />}
         </div>
@@ -50,9 +60,13 @@ function ClassForms({ studio, gate }: { studio: Studio; gate?: boolean }) {
   const { tx, lang } = useI18n();
   const [who, setWho] = useState<"student" | "teacher">("student");
   const [code, setCode] = useState("");
+  const [section, setSection] = useState("1");
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
-  const [className, setClassName] = useState(tx("Web design", "تصميم الويب"));
+  const [openCode, setOpenCode] = useState("");
+  const [openSection, setOpenSection] = useState("1");
+  const [openPin, setOpenPin] = useState("");
+  const [className, setClassName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -75,22 +89,27 @@ function ClassForms({ studio, gate }: { studio: Studio; gate?: boolean }) {
         <button type="button" aria-selected={who === "teacher"} onClick={() => setWho("teacher")}>{tx("I'm the lecturer", "أنا المحاضر")}</button>
       </div>
       {who === "student" ? (
-        <form className="stack-form" onSubmit={(event) => { event.preventDefault(); void run(() => studio.joinClass(code, name)); }}>
-          <label>{tx("Class code", "رمز الصف")}<input dir="ltr" value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} placeholder="AB23CD" autoComplete="off" /></label>
+        <form className="stack-form" onSubmit={(event) => { event.preventDefault(); void run(() => studio.joinClass(code, section, name)); }}>
+          <label>{tx("Course code", "رمز المقرر")}<input dir="ltr" value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} placeholder="CMPS100A" autoComplete="off" /></label>
+          <label>{tx("Section", "الشعبة")}<input dir="ltr" inputMode="numeric" value={section} onChange={(event) => setSection(event.target.value)} /></label>
           <label>{tx("Your name", "اسمك")}<input value={name} onChange={(event) => setName(event.target.value)} dir="auto" /></label>
           <button className="tb primary" type="submit" disabled={busy}>{tx("Join class", "انضم إلى الصف")}</button>
         </form>
       ) : (
         <div className="teacher-forms">
-          <form className="stack-form" onSubmit={(event) => { event.preventDefault(); void run(() => studio.createClass(className, pin)); }}>
-            <label>{tx("Class name", "اسم الصف")}<input value={className} onChange={(event) => setClassName(event.target.value)} dir="auto" /></label>
+          <form className="stack-form" onSubmit={(event) => { event.preventDefault(); void run(() => studio.createClass(className, code, section, pin)); }}>
+            <p className="hint">{tx("The same title and course code can be used again for section 2, 3, 4, and so on.", "يمكن استخدام نفس العنوان ونفس رمز المقرر لشعبة 2 ثم 3 ثم 4.")}</p>
+            <label>{tx("Course title", "عنوان المقرر")}<input value={className} onChange={(event) => setClassName(event.target.value)} dir="auto" /></label>
+            <label>{tx("Course code", "رمز المقرر")}<input dir="ltr" value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} placeholder="CMPS100A" autoComplete="off" /></label>
+            <label>{tx("Section", "الشعبة")}<input dir="ltr" inputMode="numeric" value={section} onChange={(event) => setSection(event.target.value)} /></label>
             <label>{tx("PIN you will remember", "رقم سري تتذكره")}<input dir="ltr" inputMode="numeric" type="password" value={pin} onChange={(event) => setPin(event.target.value)} autoComplete="new-password" /></label>
-            <button className="tb primary" type="submit" disabled={busy}>{tx("Create class", "إنشاء الصف")}</button>
+            <button className="tb primary" type="submit" disabled={busy}>{tx("Create course", "إنشاء المقرر")}</button>
           </form>
-          <form className="stack-form" onSubmit={(event) => { event.preventDefault(); void run(() => studio.enterAsTeacher(code, pin)); }}>
-            <p className="hint">{tx("Already created it? Enter the code and PIN.", "أنشأته من قبل؟ أدخل الرمز والرقم السري.")}</p>
-            <label>{tx("Class code", "رمز الصف")}<input dir="ltr" value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} autoComplete="off" /></label>
-            <label>{tx("PIN", "الرقم السري")}<input dir="ltr" inputMode="numeric" type="password" value={pin} onChange={(event) => setPin(event.target.value)} autoComplete="current-password" /></label>
+          <form className="stack-form" onSubmit={(event) => { event.preventDefault(); void run(() => studio.enterAsTeacher(openCode, openSection, openPin)); }}>
+            <p className="hint">{tx("Already created it? Enter the course code, section, and PIN.", "أنشأته من قبل؟ أدخل رمز المقرر والشعبة والرقم السري.")}</p>
+            <label>{tx("Course code", "رمز المقرر")}<input dir="ltr" value={openCode} onChange={(event) => setOpenCode(event.target.value.toUpperCase())} placeholder="CMPS100A" autoComplete="off" /></label>
+            <label>{tx("Section", "الشعبة")}<input dir="ltr" inputMode="numeric" value={openSection} onChange={(event) => setOpenSection(event.target.value)} /></label>
+            <label>{tx("PIN", "الرقم السري")}<input dir="ltr" inputMode="numeric" type="password" value={openPin} onChange={(event) => setOpenPin(event.target.value)} autoComplete="current-password" /></label>
             <button className="tb" type="submit" disabled={busy}>{tx("Open lecturer view", "افتح لوحة المحاضر")}</button>
           </form>
         </div>
@@ -127,7 +146,7 @@ function LearnerLessons({ studio }: { studio: Studio }) {
       {error && <p className="form-error">{error}</p>}
       {lessons.length === 0 && <p className="hint">{tx("No lesson yet. You can still make a new website.", "لا يوجد درس بعد. يمكنك إنشاء موقع جديد.")}</p>}
       {lessons.map((lesson) => <LessonCard key={lesson.id} studio={studio} lesson={lesson} />)}
-      <button type="button" className="text-btn" onClick={() => void studio.leaveClass()}>{tx("Leave class", "مغادرة الصف")} · {lang === "ar" ? studio.session?.className : studio.session?.joinCode}</button>
+      <button type="button" className="text-btn" onClick={() => void studio.leaveClass()}>{tx("Leave class", "مغادرة الصف")} · <span dir="ltr">{studio.session?.courseCode || studio.session?.joinCode} · {studio.session?.section}</span></button>
     </div>
   );
 }
@@ -187,9 +206,9 @@ function TeacherBoard({ studio }: { studio: Studio }) {
 
   return (
     <div className="board">
-      <div className="join-code">
-        <span>{tx("Students join with", "ينضم الطلاب بالرمز")}</span>
-        <strong dir="ltr">{studio.session?.joinCode}</strong>
+      <div className="join-code course">
+        <span>{tx("Students join this section with", "ينضم الطلاب إلى هذه الشعبة بـ")}</span>
+        <strong dir="ltr">{studio.session?.courseCode || studio.session?.joinCode} · {studio.session?.section || "1"}</strong>
       </div>
       {error && <p className="form-error">{error}</p>}
       <div className="board-head">

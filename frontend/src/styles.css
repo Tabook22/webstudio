@@ -415,6 +415,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .form-error { color: var(--danger); margin: 0; }
 .join-code { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 16px; background: color-mix(in srgb, var(--accent) 12%, var(--panel)); }
 .join-code strong { font-family: var(--mono); font-size: 1.8rem; letter-spacing: 0.18em; }
+.join-code.course strong { font-size: 1.15rem; letter-spacing: 0.04em; }
+.course-settings { display: grid; grid-template-columns: 240px 1fr; gap: 16px; align-items: start; }
+.course-side, .course-editor { display: grid; gap: 10px; }
+.course-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; max-height: 460px; overflow: auto; }
+.course-list button { width: 100%; text-align: start; display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); }
+.course-list button[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--panel)); }
+.course-list span, .course-list em { font-family: var(--mono); font-size: 12px; font-style: normal; color: var(--muted, var(--ink)); }
+.course-editor h3 { margin: 0; font-family: var(--display); }
+.exam-fields textarea { font-family: var(--mono); font-size: 13px; }
+.form-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.tb.danger { color: var(--danger); }
 .board-head { display: flex; align-items: center; justify-content: space-between; }
 .board-head h3 { margin: 0; font-family: var(--display); }
 .lesson-card, .roster-row { border: 1px solid var(--line); border-radius: 16px; padding: 12px; background: var(--bg-2); display: grid; gap: 8px; }
@@ -560,7 +571,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .more-menu { position: fixed; inset-inline: 12px; top: auto; bottom: 76px; max-height: 60dvh; overflow: auto; }
   .modal { width: calc(100% - 16px); max-height: 88dvh; border-radius: 16px; }
   .modal-back { padding: 8px; align-items: flex-end; }
-  .teacher-forms, .form-row, .welcome-steps { grid-template-columns: 1fr; }
+  .teacher-forms, .form-row, .welcome-steps, .course-settings { grid-template-columns: 1fr; }
   input, select, textarea { font-size: 16px; }
 }
 
@@ -812,6 +823,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center;
   border-radius: 4px; color: #1a3d66;
 }
+.shell .fold .tool.on { background: #1a6fb5; color: #fff; border-color: #1a6fb5; }
 .tool.danger { color: #a12626; }
 .prop-tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin: 8px 12px 0; }
 .prop-tabs button {
