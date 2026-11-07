@@ -63,8 +63,8 @@ export const CHAPTERS: Chapter[] = [
         tool(
           ["I'm the lecturer", "أنا المحاضر"],
           ["Welcome page, second tab", "صفحة الترحيب، التبويب الثاني"],
-          ["Opens the section board: lessons and the student list. It does not open Course settings. The PIN is the section PIN, 4 to 8 digits.", "يفتح لوحة الشعبة: الدروس وقائمة الطلاب. لا يفتح إعدادات المقررات. الرقم السري هو رقم الشعبة، من 4 إلى 8 أرقام."],
-          ["Type CMPS100A, section 1, and the section PIN saved in Course settings. Press Open lecturer view. A password from the Coordinator tab will not open this door.", "اكتب CMPS100A، والشعبة 1، والرقم السري المحفوظ في إعدادات المقررات. اضغط افتح لوحة المحاضر. كلمة المرور من تبويب منسق المقرر لا تفتح هذا الباب."],
+          ["Opens the section board: lessons and the student list. It does not open Course settings. Choose the section from the list, then enter its 4 to 8 digit PIN.", "يفتح لوحة الشعبة: الدروس وقائمة الطلاب. لا يفتح إعدادات المقررات. اختر الشعبة من القائمة، ثم أدخل رقمها السري من 4 إلى 8 أرقام."],
+          ["Open the course list and choose CMPS100A, section 1. Type the section PIN saved in Course settings. Press Open lecturer view. A password from the Coordinator tab will not open this door.", "افتح قائمة المقررات واختر CMPS100A، الشعبة 1. اكتب الرقم السري المحفوظ في إعدادات المقررات. اضغط افتح لوحة المحاضر. كلمة المرور من تبويب منسق المقرر لا تفتح هذا الباب."],
         ),
         tool(
           ["Coordinator", "منسق المقرر"],

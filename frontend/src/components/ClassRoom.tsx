@@ -116,8 +116,6 @@ function ClassForms({ studio, gate }: { studio: Studio; gate?: boolean }) {
   const [name, setName] = useState("");
   const [studentId, setStudentId] = useState("");
   const [pin, setPin] = useState("");
-  const [openCode, setOpenCode] = useState("");
-  const [openSection, setOpenSection] = useState("1");
   const [openPin, setOpenPin] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -188,11 +186,24 @@ function ClassForms({ studio, gate }: { studio: Studio; gate?: boolean }) {
           event.preventDefault();
           const data = new FormData(event.currentTarget);
           const text = (key: string) => String(data.get(key) || "");
-          void run(() => studio.enterAsTeacher(text("course_code"), text("section"), text("pin")));
+          const picked = courses.find((item) => item.id === text("course_id"));
+          if (!picked) {
+            setError(localizeError(courses.length ? "Choose your course." : "No course is open yet.", lang));
+            return;
+          }
+          void run(() => studio.enterAsTeacher(picked.course_code, picked.section, text("pin")));
         }}>
-          <p className="hint">{tx("Open one section with its course code, section number, and its own 4 to 8 digit PIN. Another section of the same course has a different PIN and a different exam.", "افتح شعبة واحدة برمز المقرر ورقم الشعبة ورقمها السري الخاص من 4 إلى 8 أرقام. الشعبة الأخرى من المقرر نفسه لها رقم سري مختلف واختبار مختلف.")}</p>
-          <label>{tx("Course code", "رمز المقرر")}<input name="course_code" dir="ltr" value={openCode} onChange={(event) => setOpenCode(event.target.value.toUpperCase())} placeholder="CMPS100A" autoComplete="off" /></label>
-          <label>{tx("Section", "الشعبة")}<input name="section" dir="ltr" inputMode="numeric" value={openSection} onChange={(event) => setOpenSection(event.target.value)} autoComplete="off" /></label>
+          <p className="hint">{tx("Choose a section from the list, then enter its 4 to 8 digit PIN. Another section of the same course has a different PIN and a different exam.", "اختر شعبة من القائمة، ثم أدخل رقمها السري من 4 إلى 8 أرقام. الشعبة الأخرى من المقرر نفسه لها رقم سري مختلف واختبار مختلف.")}</p>
+          <label>{tx("Your course", "مقررك")}
+            <select name="course_id" dir="ltr" value={courseId} onChange={(event) => setCourseId(event.target.value)}>
+              <option value="">{courses.length ? tx("Choose your course", "اختر مقررك") : tx("No course is open yet", "لا يوجد مقرر مفتوح بعد")}</option>
+              {courses.map((course) => (
+                <option key={course.id} value={course.id}>
+                  {`${course.course_code} · ${tx("Section", "الشعبة")} ${course.section} — ${course.name}`}
+                </option>
+              ))}
+            </select>
+          </label>
           <label>{tx("Section PIN", "الرقم السري للشعبة")}<input name="pin" dir="ltr" inputMode="numeric" type="password" value={openPin} onChange={(event) => setOpenPin(event.target.value)} autoComplete="off" /></label>
           <button className="tb primary" type="submit" disabled={busy}>{tx("Open lecturer view", "افتح لوحة المحاضر")}</button>
         </form>

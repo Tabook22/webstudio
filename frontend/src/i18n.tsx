@@ -67,6 +67,7 @@ const ERRORS: Record<string, string> = {
   "Type the course code.": "اكتب رمز المقرر.",
   "Choose your course.": "اختر مقررك.",
   "No course is open yet. Ask your lecturer.": "لا يوجد مقرر مفتوح بعد. اسأل المحاضر.",
+  "No course is open yet.": "لا يوجد مقرر مفتوح بعد.",
   "Type the section number.": "اكتب رقم الشعبة.",
   "Type your student ID.": "اكتب رقمك الجامعي.",
   "Fill in every box, then press Enter class.": "املأ كل الخانات، ثم اضغط ادخل إلى الصف.",
