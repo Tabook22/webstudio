@@ -20,12 +20,24 @@ function headers(json = false, auth?: string | null): Headers {
   return result;
 }
 
+function errorText(detail: unknown, fallback: string) {
+  if (typeof detail === "string" && detail.trim()) return detail;
+  if (Array.isArray(detail)) {
+    const first = detail.find((item) => item && typeof item === "object" && "msg" in item);
+    if (first && typeof first.msg === "string") {
+      const loc = "loc" in first && Array.isArray(first.loc) ? String(first.loc.at(-1) || "") : "";
+      if (loc === "pin") return "The PIN must be 4 to 8 digits.";
+      return first.msg;
+    }
+  }
+  return fallback;
+}
+
 async function read<T>(res: Response): Promise<T> {
   if (!res.ok) {
     let detail = res.statusText;
     try {
-      const body = await res.json();
-      detail = typeof body.detail === "string" ? body.detail : detail;
+      detail = errorText((await res.json()).detail, detail);
     } catch {
       /* ignore */
     }

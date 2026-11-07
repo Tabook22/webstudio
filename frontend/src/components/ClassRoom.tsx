@@ -92,10 +92,10 @@ function ClassForms({ studio, gate }: { studio: Studio; gate?: boolean }) {
         </form>
       ) : who === "teacher" ? (
         <form className="stack-form" onSubmit={(event) => { event.preventDefault(); void run(() => studio.enterAsTeacher(openCode, openSection, openPin)); }}>
-          <p className="hint">{tx("A coordinator creates the course. Open your section with its code and PIN.", "منسق المقرر ينشئ المقرر. افتح شعبتك برمزها ورقمها السري.")}</p>
+          <p className="hint">{tx("A coordinator creates the course. Open your section with its code and its 4 to 8 digit PIN.", "منسق المقرر ينشئ المقرر. افتح شعبتك برمزها وبرقمها السري من 4 إلى 8 أرقام.")}</p>
           <label>{tx("Course code", "رمز المقرر")}<input dir="ltr" value={openCode} onChange={(event) => setOpenCode(event.target.value.toUpperCase())} placeholder="CMPS100A" autoComplete="off" /></label>
-          <label>{tx("Section", "الشعبة")}<input dir="ltr" inputMode="numeric" value={openSection} onChange={(event) => setOpenSection(event.target.value)} /></label>
-          <label>{tx("PIN", "الرقم السري")}<input dir="ltr" inputMode="numeric" type="password" value={openPin} onChange={(event) => setOpenPin(event.target.value)} autoComplete="current-password" /></label>
+          <label>{tx("Section", "الشعبة")}<input dir="ltr" inputMode="numeric" value={openSection} onChange={(event) => setOpenSection(event.target.value)} autoComplete="off" /></label>
+          <label>{tx("Section PIN", "الرقم السري للشعبة")}<input dir="ltr" inputMode="numeric" name="section-pin" type="password" value={openPin} onChange={(event) => setOpenPin(event.target.value)} autoComplete="off" /></label>
           <button className="tb primary" type="submit" disabled={busy}>{tx("Open lecturer view", "افتح لوحة المحاضر")}</button>
         </form>
       ) : studio.staff ? (

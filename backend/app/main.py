@@ -138,7 +138,7 @@ class ClassCreate(BaseModel):
 class ClassEnter(BaseModel):
     course_code: str = Field(min_length=1, max_length=16)
     section: str = Field(min_length=1, max_length=4)
-    pin: str = Field(min_length=4, max_length=8)
+    pin: str = ""
 
 
 class ClassJoin(BaseModel):
