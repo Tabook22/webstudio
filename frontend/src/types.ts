@@ -69,6 +69,7 @@ export type Session =
       courseCode?: string;
       section?: string;
       name: string;
+      studentId?: string;
       learnerId: string;
     }
   | {
@@ -95,6 +96,7 @@ export type ClassProject = {
 export type ClassLearner = {
   id: string;
   name: string;
+  student_id?: string;
   joined_at: number;
   projects: ClassProject[];
 };
@@ -109,7 +111,7 @@ export type ClassHome =
   | {
       role: "learner";
       class: CourseInfo;
-      learner: { id: string; name: string };
+      learner: { id: string; name: string; student_id?: string };
       lessons: Lesson[];
     };
 
@@ -189,6 +191,22 @@ export type MissionState = {
 
 export type ConsoleLine = { level: string; text: string };
 
+export type StaffSession = {
+  token: string;
+  username: string;
+  displayName: string;
+  role: "admin" | "coordinator";
+};
+
+export type StaffAccount = {
+  id: string;
+  username: string;
+  display_name: string;
+  role: "admin" | "coordinator";
+  active: boolean;
+  token?: string;
+};
+
 export type ModalState =
   | null
   | { type: "new" }
@@ -204,4 +222,5 @@ export type ModalState =
   | { type: "run" }
   | { type: "table"; path: number[] | null; tag: string }
   | { type: "mission"; id: string }
-  | { type: "class" };
+  | { type: "class" }
+  | { type: "admin" };

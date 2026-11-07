@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { AdminDialog } from "./AdminDesk";
 import { ClassDialog } from "./ClassRoom";
 import { previewDocument, templatePreview } from "../editor/html";
 import { FONTS, GRADIENTS, MISSIONS, SWATCHES, checkLinks, checkPage, pageFacts } from "../editor/learn";
@@ -10,12 +11,13 @@ export function Dialogs({ studio }: { studio: Studio }) {
   const modal = studio.modal;
   if (!modal) return null;
   if (modal.type === "class") return <ClassDialog studio={studio} />;
-  if (!studio.project) return null;
-  const close = () => studio.setModal(null);
-
+  if (modal.type === "admin") return <AdminDialog studio={studio} />;
   if (modal.type === "new") return <NewDialog studio={studio} />;
   if (modal.type === "projects") return <ProjectsDialog studio={studio} />;
   if (modal.type === "open") return <OpenDialog studio={studio} />;
+  if (!studio.project) return null;
+  const close = () => studio.setModal(null);
+
   if (modal.type === "kits") return <KitsDialog studio={studio} />;
   if (modal.type === "page") return <PageDialog studio={studio} />;
   if (modal.type === "paste") return <PasteDialog studio={studio} />;

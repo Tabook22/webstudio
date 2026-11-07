@@ -126,6 +126,22 @@ class Learner(Base):
     id: Mapped[str] = mapped_column(String(16), primary_key=True)
     class_id: Mapped[str] = mapped_column(ForeignKey("classrooms.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(String(40))
+    student_id: Mapped[str] = mapped_column(String(32), default="")
+    token: Mapped[str] = mapped_column(String(80), unique=True)
+    created_at: Mapped[int] = mapped_column(BigInteger, default=now_ms)
+
+
+class Staff(Base):
+    """A coordinator or admin. Course settings require one of these accounts."""
+
+    __tablename__ = "staff"
+
+    id: Mapped[str] = mapped_column(String(16), primary_key=True)
+    username: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    display_name: Mapped[str] = mapped_column(String(80))
+    password_hash: Mapped[str] = mapped_column(String(200))
+    role: Mapped[str] = mapped_column(String(16), default="coordinator")
+    active: Mapped[int] = mapped_column(default=1)
     token: Mapped[str] = mapped_column(String(80), unique=True)
     created_at: Mapped[int] = mapped_column(BigInteger, default=now_ms)
 
@@ -190,6 +206,13 @@ def init_db() -> None:
         connection.exec_driver_sql("UPDATE classrooms SET exam_json = '' WHERE exam_json IS NULL")
         connection.exec_driver_sql(
             "CREATE UNIQUE INDEX IF NOT EXISTS uq_course_section ON classrooms(course_code, section)"
+        )
+        learner_cols = _columns(connection, "learners")
+        if "student_id" not in learner_cols:
+            connection.exec_driver_sql("ALTER TABLE learners ADD COLUMN student_id VARCHAR(32) DEFAULT ''")
+        connection.exec_driver_sql("UPDATE learners SET student_id = '' WHERE student_id IS NULL")
+        connection.exec_driver_sql(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_learner_student ON learners(class_id, student_id) WHERE student_id != ''"
         )
 
 

@@ -1,4 +1,4 @@
-import type { Asset, ClassHome, CourseRecord, Kit, Lesson, MissionState, Project, ProjectSummary, TemplateInfo } from "./types";
+import type { Asset, ClassHome, CourseRecord, Kit, Lesson, MissionState, Project, ProjectSummary, StaffAccount, TemplateInfo } from "./types";
 
 type ExamBody = { questions: string; questionsAr?: string; html: string };
 
@@ -95,9 +95,9 @@ export const api = {
     fetch(apiUrl("/api/classes/enter"), { method: "POST", headers: headers(true, null), body: JSON.stringify(body) }).then((res) =>
       read<CourseRecord>(res),
     ),
-  joinClass: (body: { course_code: string; section: string; name: string }) =>
+  joinClass: (body: { course_code: string; section: string; name: string; student_id: string; pin: string }) =>
     fetch(apiUrl("/api/classes/join"), { method: "POST", headers: headers(true, null), body: JSON.stringify(body) }).then((res) =>
-      read<{ token: string; learner: { id: string; name: string }; class: CourseRecord; lessons: Lesson[] }>(res),
+      read<{ token: string; learner: { id: string; name: string; student_id: string }; class: CourseRecord; lessons: Lesson[] }>(res),
     ),
   listCourses: (token: string) =>
     fetch(apiUrl("/api/admin/courses"), { headers: headers(false, token) }).then((res) => read<CourseRecord[]>(res)),
@@ -117,6 +117,21 @@ export const api = {
     ),
   myExam: (token: string) =>
     fetch(apiUrl("/api/classes/exam"), { headers: headers(false, token) }).then((res) => read<{ exam: ExamBody | null }>(res)),
+  staffStatus: () => fetch(apiUrl("/api/staff/status")).then((res) => read<{ needs_setup: boolean }>(res)),
+  staffSetup: (body: { username: string; password: string; display_name: string }) =>
+    fetch(apiUrl("/api/staff/setup"), { method: "POST", headers: headers(true, null), body: JSON.stringify(body) }).then((res) => read<StaffAccount>(res)),
+  staffLogin: (body: { username: string; password: string }) =>
+    fetch(apiUrl("/api/staff/login"), { method: "POST", headers: headers(true, null), body: JSON.stringify(body) }).then((res) => read<StaffAccount>(res)),
+  staffMe: (token: string) =>
+    fetch(apiUrl("/api/staff/me"), { headers: headers(false, token) }).then((res) => read<StaffAccount>(res)),
+  staffPassword: (token: string, body: { current_password: string; password: string }) =>
+    fetch(apiUrl("/api/staff/password"), { method: "POST", headers: headers(true, token), body: JSON.stringify(body) }).then((res) => read<StaffAccount>(res)),
+  staffAccounts: (token: string) =>
+    fetch(apiUrl("/api/staff/accounts"), { headers: headers(false, token) }).then((res) => read<StaffAccount[]>(res)),
+  staffCreate: (token: string, body: { username: string; password: string; display_name: string; role: string }) =>
+    fetch(apiUrl("/api/staff/accounts"), { method: "POST", headers: headers(true, token), body: JSON.stringify(body) }).then((res) => read<StaffAccount>(res)),
+  staffUpdate: (token: string, id: string, body: { display_name?: string; role?: string; active?: boolean; password?: string }) =>
+    fetch(apiUrl(`/api/staff/accounts/${id}`), { method: "PATCH", headers: headers(true, token), body: JSON.stringify(body) }).then((res) => read<StaffAccount>(res)),
   classHome: (token: string) => fetch(apiUrl("/api/classes/home"), { headers: headers(false, token) }).then((res) => read<ClassHome>(res)),
   createLesson: (token: string, body: { title: string; brief_en: string; brief_ar: string; template_id: string; site_lang: string; mission_ids: string[] }) =>
     fetch(apiUrl("/api/classes/lessons"), { method: "POST", headers: headers(true, token), body: JSON.stringify(body) }).then((res) => read<Lesson>(res)),

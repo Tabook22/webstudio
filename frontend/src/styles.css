@@ -425,6 +425,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .course-editor h3 { margin: 0; font-family: var(--display); }
 .exam-fields textarea { font-family: var(--mono); font-size: 13px; }
 .form-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.account-list { display: grid; gap: 10px; }
+.account-card { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+.account-card header { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.account-card header span { font-family: var(--mono); font-size: 12px; }
 .tb.danger { color: var(--danger); }
 .board-head { display: flex; align-items: center; justify-content: space-between; }
 .board-head h3 { margin: 0; font-family: var(--display); }

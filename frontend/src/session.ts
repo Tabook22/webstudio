@@ -1,6 +1,7 @@
-import type { Session } from "./types";
+import type { Session, StaffSession } from "./types";
 
 const KEY = "webstudio:session";
+const STAFF_KEY = "webstudio:staff";
 
 export function readSession(): Session | null {
   try {
@@ -17,6 +18,23 @@ export function readSession(): Session | null {
 export function writeSession(session: Session | null) {
   if (!session) localStorage.removeItem(KEY);
   else localStorage.setItem(KEY, JSON.stringify(session));
+}
+
+export function readStaff(): StaffSession | null {
+  try {
+    const raw = localStorage.getItem(STAFF_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as StaffSession;
+    if (!data?.token || !data.username || (data.role !== "admin" && data.role !== "coordinator")) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+export function writeStaff(staff: StaffSession | null) {
+  if (!staff) localStorage.removeItem(STAFF_KEY);
+  else localStorage.setItem(STAFF_KEY, JSON.stringify(staff));
 }
 
 export function deviceId() {

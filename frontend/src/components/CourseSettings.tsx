@@ -9,7 +9,7 @@ const empty = { name: "", course_code: "", section: "1", pin: "" };
 
 export function CourseSettings({ studio }: { studio: Studio }) {
   const { tx, lang } = useI18n();
-  const token = studio.session?.role === "teacher" ? studio.session.token : "";
+  const token = studio.staff?.token || "";
   const [courses, setCourses] = useState<CourseRecord[]>([]);
   const [selected, setSelected] = useState(studio.session?.classId || "");
   const [form, setForm] = useState(empty);
@@ -97,7 +97,6 @@ export function CourseSettings({ studio }: { studio: Studio }) {
     setNote("");
     try {
       const saved = await api.saveCourse(token, form, selected || undefined);
-      if (saved.id === studio.session?.classId) studio.openSection(saved);
       await load(saved.id);
       setNote(tx("Course saved.", "تم حفظ المقرر."));
     } catch (err) {

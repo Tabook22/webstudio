@@ -78,12 +78,29 @@ function StudioShell() {
     return (
       <div className="gate">
         <div className="gate-card">
-          <h1>{tx("Your class", "صفك")}</h1>
-          <p>{tx("Start the lesson, or make a blank page.", "ابدأ الدرس، أو أنشئ صفحة فارغة.")}</p>
-          <div className="lesson-list">
-            {studio.lessons.map((lesson) => <LessonCard key={lesson.id} studio={studio} lesson={lesson} />)}
+          <h1>{studio.session?.role === "learner" ? studio.session.name : studio.session?.className || tx("Your class", "صفك")}</h1>
+          <p className="hint" dir="ltr">{studio.session?.role === "learner" ? [studio.session.studentId, studio.session.courseCode, studio.session.section].filter(Boolean).join(" · ") : ""}</p>
+          <p>{tx("This workspace belongs to your student ID. Your saved websites and folders are listed here so you can continue them.", "مساحة العمل هذه لرقمك الجامعي. مواقعك ومجلداتك المحفوظة ظاهرة هنا لتتابعها.")}</p>
+          <div className="project-list">
+            {studio.projects.length === 0 && <p className="hint">{tx("No saved work yet. Create a website, or choose a folder from your computer.", "لا يوجد عمل محفوظ بعد. أنشئ موقعًا، أو اختر مجلدًا من حاسوبك.")}</p>}
+            {studio.projects.map((item) => (
+              <div key={item.id} className="project-row">
+                <button type="button" onClick={() => void studio.openProject(item.id)}>
+                  <strong dir="auto">{item.name}</strong>
+                  <small>{new Date(item.updated_at).toLocaleString(lang === "ar" ? "ar" : "en")}</small>
+                </button>
+              </div>
+            ))}
           </div>
-          <button className="tb" onClick={() => void studio.createSite(tx("My website", "موقعي"), "blank", lang)}>{tx("Blank page", "صفحة فارغة")}</button>
+          <div className="form-actions">
+            <button className="tb primary" onClick={() => studio.setModal({ type: "new" })}>{tx("New website", "موقع جديد")}</button>
+            <button className="tb" onClick={() => studio.setModal({ type: "open" })}>{tx("Choose a folder", "اختر مجلدًا")}</button>
+          </div>
+          {studio.lessons.length > 0 && (
+            <div className="lesson-list">
+              {studio.lessons.map((lesson) => <LessonCard key={lesson.id} studio={studio} lesson={lesson} />)}
+            </div>
+          )}
         </div>
         <Dialogs studio={studio} />
       </div>
@@ -109,7 +126,8 @@ function StudioShell() {
         <div className="ew-menu">
           <EwMenus studio={studio} setHand={setHand} place={place} inTable={inTable} />
           <div className="ew-menu-end">
-            <button type="button" className="ew-class" onClick={() => studio.setModal({ type: "class" })}>{studio.session?.role === "teacher" ? tx("Course settings", "إعدادات المقررات") : studio.session ? studio.session.className : tx("Classroom", "الصف الدراسي")}</button>
+            <button type="button" className="ew-class" onClick={() => studio.setModal({ type: "class" })}>{studio.session ? studio.session.className : tx("Classroom", "الصف الدراسي")}</button>
+            <button type="button" className="ew-class" onClick={() => studio.setModal({ type: "admin" })}>{studio.staff?.role === "admin" ? tx("Admin", "المدير") : studio.staff ? tx("Course settings", "إعدادات المقررات") : tx("Coordinator", "منسق المقرر")}</button>
             <LangSwitch />
           </div>
         </div>
@@ -371,6 +389,7 @@ function EwMenus({ studio, setHand, place, inTable }: { studio: ReturnType<typeo
         <Item label={tx("Run the script", "تشغيل السكربت")} onClick={() => run(studio.run)} />
         <hr />
         <Item label={tx("Classroom…", "الصف الدراسي…")} onClick={() => run(() => studio.setModal({ type: "class" }))} />
+        <Item label={studio.staff?.role === "admin" ? tx("Admin…", "المدير…") : tx("Course settings…", "إعدادات المقررات…")} onClick={() => run(() => studio.setModal({ type: "admin" }))} />
       </Drop>
       <Drop name="table" label={tx("Table", "جدول")} open={open} setOpen={setOpen}>
         <Item label={tx("Insert table…", "إدراج جدول…")} onClick={() => run(() => place("table"))} />

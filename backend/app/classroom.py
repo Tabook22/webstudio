@@ -250,19 +250,43 @@ def enter_class(db: Session, course_code: str, section: str, pin: str) -> Classr
     return room
 
 
-def join_class(db: Session, course_code: str, section: str, name: str) -> tuple[Learner, Classroom]:
+def _clean_student_id(student_id: str) -> str:
+    student_id = "".join(student_id.split()).upper()
+    if len(student_id) < 2 or len(student_id) > 32 or not all(char.isalnum() or char in "-_" for char in student_id):
+        raise ValueError("The student ID uses letters and numbers, from 2 to 32.")
+    return student_id
+
+
+def join_class(db: Session, course_code: str, section: str, name: str, pin: str, student_id: str) -> tuple[Learner, Classroom]:
     name = " ".join(name.split())
     if not name or len(name) > 40:
         raise ValueError("Type your name so the lecturer can see it.")
-    code = _clean_code(course_code)
-    number = _clean_section(section)
+    try:
+        student_id = _clean_student_id(student_id)
+    except ValueError:
+        raise
+    try:
+        code = _clean_code(course_code)
+        number = _clean_section(section)
+    except ValueError:
+        raise ValueError("That course code, section, or PIN is not right.") from None
+    try:
+        pin = _clean_pin(pin)
+    except ValueError:
+        raise ValueError("That course code, section, or PIN is not right.") from None
     room = db.scalar(select(Classroom).where(Classroom.course_code == code, Classroom.section == number))
-    if room is None:
-        raise ValueError("No class uses that code and section.")
+    if room is None or not pin_matches(room.pin_hash, pin):
+        raise ValueError("That course code, section, or PIN is not right.")
+    existing = db.scalar(select(Learner).where(Learner.class_id == room.id, Learner.student_id == student_id))
+    if existing is not None:
+        if " ".join(existing.name.split()).casefold() != name.casefold():
+            raise ValueError("That student ID is saved with a different name.")
+        return existing, room
     learner = Learner(
         id=new_id(),
         class_id=room.id,
         name=name,
+        student_id=student_id,
         token=secrets.token_urlsafe(24),
         created_at=now_ms(),
     )
@@ -382,6 +406,7 @@ def board(db: Session, room: Classroom) -> dict:
             {
                 "id": learner.id,
                 "name": learner.name,
+                "student_id": learner.student_id or "",
                 "joined_at": learner.created_at,
                 "projects": by_learner.get(learner.id, []),
             }
@@ -394,6 +419,6 @@ def learner_home(db: Session, learner: Learner, room: Classroom) -> dict:
     return {
         "role": "learner",
         "class": class_out(room),
-        "learner": {"id": learner.id, "name": learner.name},
+        "learner": {"id": learner.id, "name": learner.name, "student_id": learner.student_id or ""},
         "lessons": [lesson_out(lesson) for lesson in lessons_for(db, room.id)],
     }

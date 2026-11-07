@@ -47,7 +47,18 @@ from .classroom import (
     write_exam,
 )
 from .content import public_kits, public_templates, template_by_id
-from .db import AppState, Asset, Classroom, Project, get_db, init_db, now_ms
+from .db import AppState, Asset, Classroom, Project, Staff, get_db, init_db, now_ms
+from .staff import (
+    change_own_password,
+    create_staff,
+    find_staff,
+    list_staff,
+    login_staff,
+    needs_setup,
+    session_out,
+    staff_out,
+    update_staff,
+)
 from .services import add_asset, build_zip, create_project, import_files
 
 DEVICE_RE = re.compile(r"^[A-Za-z0-9_-]{8,40}$")
@@ -134,6 +145,8 @@ class ClassJoin(BaseModel):
     course_code: str = Field(min_length=1, max_length=16)
     section: str = Field(min_length=1, max_length=4)
     name: str = Field(min_length=1, max_length=40)
+    student_id: str = ""
+    pin: str = ""
 
 
 class CourseUpdate(BaseModel):
@@ -147,6 +160,36 @@ class ExamWrite(BaseModel):
     questions: str = ""
     questionsAr: str = ""
     html: str = ""
+
+
+class StaffSetup(BaseModel):
+    username: str
+    password: str
+    display_name: str = ""
+
+
+class StaffLogin(BaseModel):
+    username: str
+    password: str
+
+
+class StaffCreate(BaseModel):
+    username: str
+    password: str
+    display_name: str = ""
+    role: str = "coordinator"
+
+
+class StaffUpdate(BaseModel):
+    display_name: str | None = None
+    role: str | None = None
+    active: bool | None = None
+    password: str = ""
+
+
+class PasswordChange(BaseModel):
+    current_password: str
+    password: str
 
 
 class LessonCreate(BaseModel):
@@ -658,8 +701,120 @@ def _teacher(who: Actor | None) -> Actor:
     return who
 
 
+def read_staff(
+    authorization: Annotated[str | None, Header()] = None,
+    db: Session = Depends(get_db),
+) -> Staff | None:
+    if not authorization:
+        return None
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not token.strip():
+        raise HTTPException(status_code=401, detail="Sign in as a coordinator or admin.")
+    found = find_staff(db, token.strip())
+    if found is None:
+        raise HTTPException(status_code=401, detail="Sign in as a coordinator or admin.")
+    return found
+
+
+def _coordinator(user: Staff | None) -> Staff:
+    if user is None:
+        raise HTTPException(status_code=401, detail="Sign in as a coordinator or admin.")
+    return user
+
+
+def _admin(user: Staff | None) -> Staff:
+    user = _coordinator(user)
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only an admin can do that.")
+    return user
+
+
+@app.get("/api/staff/status")
+def staff_status(db: Session = Depends(get_db)):
+    return {"needs_setup": needs_setup(db)}
+
+
+@app.post("/api/staff/setup", status_code=201)
+def staff_setup(body: StaffSetup, db: Session = Depends(get_db)):
+    if not needs_setup(db):
+        raise HTTPException(status_code=403, detail="Only an admin can do that.")
+    try:
+        user = create_staff(db, body.username, body.password, body.display_name, "admin")
+    except ValueError as exc:
+        raise _class_error(exc) from exc
+    db.commit()
+    return session_out(user)
+
+
+@app.post("/api/staff/login")
+def staff_login(body: StaffLogin, db: Session = Depends(get_db)):
+    try:
+        user = login_staff(db, body.username, body.password)
+    except ValueError as exc:
+        raise _class_error(exc) from exc
+    db.commit()
+    return session_out(user)
+
+
+@app.get("/api/staff/me")
+def staff_me(user: Staff | None = Depends(read_staff)):
+    return session_out(_coordinator(user))
+
+
+@app.post("/api/staff/password")
+def staff_password(body: PasswordChange, db: Session = Depends(get_db), user: Staff | None = Depends(read_staff)):
+    owner = _coordinator(user)
+    try:
+        change_own_password(owner, body.current_password, body.password)
+    except ValueError as exc:
+        raise _class_error(exc) from exc
+    db.commit()
+    return session_out(owner)
+
+
+@app.get("/api/staff/accounts")
+def staff_accounts(db: Session = Depends(get_db), user: Staff | None = Depends(read_staff)):
+    _admin(user)
+    return [staff_out(item) for item in list_staff(db)]
+
+
+@app.post("/api/staff/accounts", status_code=201)
+def staff_create_account(body: StaffCreate, db: Session = Depends(get_db), user: Staff | None = Depends(read_staff)):
+    _admin(user)
+    try:
+        created = create_staff(db, body.username, body.password, body.display_name, body.role)
+    except ValueError as exc:
+        raise _class_error(exc) from exc
+    db.commit()
+    return staff_out(created)
+
+
+@app.patch("/api/staff/accounts/{account_id}")
+def staff_update_account(
+    account_id: str,
+    body: StaffUpdate,
+    db: Session = Depends(get_db),
+    user: Staff | None = Depends(read_staff),
+):
+    actor = _admin(user)
+    account = db.get(Staff, account_id)
+    if account is None:
+        raise HTTPException(status_code=404, detail="That account was not found.")
+    if account.id == actor.id and body.active is False:
+        raise HTTPException(status_code=400, detail="You cannot turn off the account you are using.")
+    try:
+        update_staff(db, account, body.display_name, body.role, body.active, body.password)
+    except ValueError as exc:
+        raise _class_error(exc) from exc
+    db.commit()
+    if account.id == actor.id:
+        return session_out(account)
+    return staff_out(account)
+
+
 @app.post("/api/classes", status_code=201)
-def post_class(body: ClassCreate, db: Session = Depends(get_db)):
+def post_class(body: ClassCreate, db: Session = Depends(get_db), user: Staff | None = Depends(read_staff)):
+    _coordinator(user)
     try:
         room = create_class(db, body.name, body.course_code, body.section, body.pin)
     except ValueError as exc:
@@ -680,13 +835,13 @@ def post_enter(body: ClassEnter, db: Session = Depends(get_db)):
 @app.post("/api/classes/join", status_code=201)
 def post_join(body: ClassJoin, db: Session = Depends(get_db)):
     try:
-        learner, room = join_class(db, body.course_code, body.section, body.name)
+        learner, room = join_class(db, body.course_code, body.section, body.name, body.pin, body.student_id)
     except ValueError as exc:
         raise _class_error(exc) from exc
     db.commit()
     return {
         "token": learner.token,
-        "learner": {"id": learner.id, "name": learner.name},
+        "learner": {"id": learner.id, "name": learner.name, "student_id": learner.student_id or ""},
         "class": class_out(room),
         "lessons": [lesson_out(lesson) for lesson in lessons_for(db, room.id)],
     }
@@ -717,14 +872,14 @@ def _course(db: Session, course_id: str) -> Classroom:
 
 
 @app.get("/api/admin/courses")
-def admin_courses(db: Session = Depends(get_db), who: Actor | None = Depends(read_actor)):
-    _teacher(who)
+def admin_courses(db: Session = Depends(get_db), user: Staff | None = Depends(read_staff)):
+    _coordinator(user)
     return [course_admin(room) for room in list_courses(db)]
 
 
 @app.post("/api/admin/courses", status_code=201)
-def admin_create_course(body: ClassCreate, db: Session = Depends(get_db), who: Actor | None = Depends(read_actor)):
-    _teacher(who)
+def admin_create_course(body: ClassCreate, db: Session = Depends(get_db), user: Staff | None = Depends(read_staff)):
+    _coordinator(user)
     try:
         room = create_class(db, body.name, body.course_code, body.section, body.pin)
     except ValueError as exc:
@@ -738,9 +893,9 @@ def admin_update_course(
     course_id: str,
     body: CourseUpdate,
     db: Session = Depends(get_db),
-    who: Actor | None = Depends(read_actor),
+    user: Staff | None = Depends(read_staff),
 ):
-    _teacher(who)
+    _coordinator(user)
     room = _course(db, course_id)
     try:
         update_class(db, room, body.name, body.course_code, body.section, body.pin)
@@ -751,8 +906,8 @@ def admin_update_course(
 
 
 @app.delete("/api/admin/courses/{course_id}")
-def admin_delete_course(course_id: str, db: Session = Depends(get_db), who: Actor | None = Depends(read_actor)):
-    _teacher(who)
+def admin_delete_course(course_id: str, db: Session = Depends(get_db), user: Staff | None = Depends(read_staff)):
+    _coordinator(user)
     room = _course(db, course_id)
     delete_course(db, room)
     db.commit()
@@ -760,8 +915,8 @@ def admin_delete_course(course_id: str, db: Session = Depends(get_db), who: Acto
 
 
 @app.get("/api/admin/courses/{course_id}/exam")
-def admin_get_exam(course_id: str, db: Session = Depends(get_db), who: Actor | None = Depends(read_actor)):
-    _teacher(who)
+def admin_get_exam(course_id: str, db: Session = Depends(get_db), user: Staff | None = Depends(read_staff)):
+    _coordinator(user)
     return {"exam": read_exam(_course(db, course_id))}
 
 
@@ -770,9 +925,9 @@ def admin_put_exam(
     course_id: str,
     body: ExamWrite,
     db: Session = Depends(get_db),
-    who: Actor | None = Depends(read_actor),
+    user: Staff | None = Depends(read_staff),
 ):
-    _teacher(who)
+    _coordinator(user)
     room = _course(db, course_id)
     try:
         paper = write_exam(room, body.questions, body.questionsAr, body.html)

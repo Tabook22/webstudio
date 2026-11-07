@@ -18,8 +18,8 @@ import {
 } from "./editor/html";
 import { MISSIONS, missionContext, passes } from "./editor/learn";
 import { localizeError } from "./i18n";
-import { deviceId, ensureDevice, readSession, writeSession } from "./session";
-import type { Asset, ClassHome, CodeTab, ConsoleLine, Device, Kit, Lesson, MissionState, ModalState, Mode, Project, ProjectSummary, Selection, Session, SideTab, SiteFile, TemplateInfo } from "./types";
+import { deviceId, ensureDevice, readSession, readStaff, writeSession, writeStaff } from "./session";
+import type { Asset, ClassHome, CodeTab, ConsoleLine, Device, Kit, Lesson, MissionState, ModalState, Mode, Project, ProjectSummary, Selection, Session, SideTab, SiteFile, StaffAccount, StaffSession, TemplateInfo } from "./types";
 
 type Snap = { html: string; css: string; js: string; files?: SiteFile[]; page?: string };
 
@@ -84,6 +84,12 @@ type Boot = {
 
 let bootPromise: Promise<Boot> | null = null;
 
+/** A shared computer must not keep the last student's sign-in. */
+function dropSharedStudentSession() {
+  if (readSession()?.role === "learner") writeSession(null);
+}
+dropSharedStudentSession();
+
 function summaryOf(project: Project): ProjectSummary {
   return {
     id: project.id,
@@ -112,18 +118,7 @@ function bootStudio(lang: "en" | "ar") {
             api.classHome(session.token),
           ]);
           const lessons = home.role === "learner" ? home.lessons : [];
-          const saved = localStorage.getItem(`webstudio:open:${session.learnerId}`);
-          const chosen = projects.find((item) => item.id === saved) || projects[0];
-          let project: Project | null = chosen ? await api.project(chosen.id) : null;
-          if (!project && lessons.length === 0) {
-            project = await api.create({
-              name: lang === "ar" ? "موقعي الأول" : "My first website",
-              template_id: "personal",
-              site_lang: lang,
-            });
-          }
-          const list = project && !projects.some((item) => item.id === project!.id) ? [summaryOf(project), ...projects] : projects;
-          return { project, projects: list, templates, kits, mission: missionOf(project), lessons, session };
+          return { project: null, projects, templates, kits, mission: emptyMission(), lessons, session };
         } catch (error) {
           writeSession(null);
           api.setToken(null);
@@ -171,9 +166,8 @@ function bootStudio(lang: "en" | "ar") {
 }
 
 export function useStudio(lang: "en" | "ar") {
-  const knownComputer = Boolean(deviceId()) || readSession()?.role === "learner";
-  const [needsGate, setNeedsGate] = useState(!knownComputer);
-  const [booting, setBooting] = useState(knownComputer);
+  const [needsGate, setNeedsGate] = useState(true);
+  const [booting, setBooting] = useState(false);
   const [offline, setOffline] = useState(false);
   const [project, setProject] = useState<Project | null>(null);
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
@@ -223,6 +217,7 @@ export function useStudio(lang: "en" | "ar") {
   const [spot, setSpot] = useState<string | null>(null);
   const [hist, setHist] = useState(0);
   const [session, setSession] = useState<Session | null>(() => readSession());
+  const [staff, setStaff] = useState<StaffSession | null>(() => readStaff());
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [helping, setHelping] = useState<string | null>(null);
   const [reveal, setReveal] = useState(0);
@@ -950,7 +945,6 @@ export function useStudio(lang: "en" | "ar") {
     rememberSaved(next);
     bump();
     if (next.learner_id) {
-      localStorage.setItem(`webstudio:open:${next.learner_id}`, next.id);
       const loaded = missionOf(next);
       setMission(loaded);
       seenMission.current = loaded.active;
@@ -1179,8 +1173,14 @@ export function useStudio(lang: "en" | "ar") {
     setOffline(false);
   }
 
-  async function joinClass(courseCode: string, section: string, name: string) {
-    const result = await api.joinClass({ course_code: courseCode.trim(), section: section.trim(), name: name.trim() });
+  async function joinClass(courseCode: string, section: string, name: string, pin: string, studentId: string) {
+    const result = await api.joinClass({
+      course_code: courseCode.trim(),
+      section: section.trim(),
+      name: name.trim(),
+      student_id: studentId.trim(),
+      pin: pin.trim(),
+    });
     const next: Session = {
       role: "learner",
       token: result.token,
@@ -1190,6 +1190,7 @@ export function useStudio(lang: "en" | "ar") {
       courseCode: result.class.course_code,
       section: result.class.section,
       name: result.learner.name,
+      studentId: result.learner.student_id,
       learnerId: result.learner.id,
     };
     writeSession(next);
@@ -1207,12 +1208,42 @@ export function useStudio(lang: "en" | "ar") {
     }
     const list = await api.projects();
     setProjects(list);
-    if (list[0]) await openProject(list[0].id);
-    else {
-      projectRef.current = null;
-      setProject(null);
-      setModal(null);
-    }
+    past.current = [];
+    future.current = [];
+    projectRef.current = null;
+    setProject(null);
+    setSelection(null);
+    setModal(null);
+  }
+
+  function applyStaff(user: StaffAccount, open: boolean) {
+    if (!user.token || (user.role !== "admin" && user.role !== "coordinator")) return;
+    const next: StaffSession = {
+      token: user.token,
+      username: user.username,
+      displayName: user.display_name,
+      role: user.role,
+    };
+    writeStaff(next);
+    setStaff(next);
+    if (open) setModal({ type: "admin" });
+  }
+
+  async function signInStaff(username: string, password: string) {
+    const user = await api.staffLogin({ username: username.trim(), password });
+    applyStaff(user, true);
+    if (needsGate) await enterThisComputer();
+  }
+
+  async function setupAdmin(username: string, password: string, displayName: string) {
+    const user = await api.staffSetup({ username: username.trim(), password, display_name: displayName.trim() });
+    applyStaff(user, true);
+    if (needsGate) await enterThisComputer();
+  }
+
+  function signOutStaff() {
+    writeStaff(null);
+    setStaff(null);
   }
 
   async function createClass(name: string, courseCode: string, section: string, pin: string) {
@@ -1286,7 +1317,6 @@ export function useStudio(lang: "en" | "ar") {
     const loaded = missionOf(next);
     setMission(loaded);
     seenMission.current = loaded.active;
-    if (next.learner_id) localStorage.setItem(`webstudio:open:${next.learner_id}`, next.id);
     setSelection(null);
     rememberSaved(next);
     setModal(null);
@@ -1657,6 +1687,11 @@ export function useStudio(lang: "en" | "ar") {
     enterThisComputer,
     joinClass,
     createClass,
+    staff,
+    signInStaff,
+    setupAdmin,
+    signOutStaff,
+    applyStaff,
     enterAsTeacher,
     openSection,
     leaveClass,
